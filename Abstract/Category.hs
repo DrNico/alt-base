@@ -1,9 +1,13 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE
+        NoImplicitPrelude,
+        GADTs,
+        MultiParamTypeClasses,
+        TypeFamilies,
+        PolyKinds,
+        ScopedTypeVariables,
+        TypeOperators,
+        ConstraintKinds
+  #-}
 
 {-|
 Module          : Abstract.Category
@@ -28,61 +32,67 @@ module Abstract.Category (
 -- alt-base modules: no dependencies, this is a root module
 
 -- compatibility modules
-import Control.Arrow (Kleisli(..), (<<<))
+import Control.Arrow (Kleisli(..))
 
 -- needed standard modules
-import qualified Data.Function (id, (.))
+import Data.Bool (Bool(..))
 import Data.Either (Either(..))
-import Data.Typeable (Proxy(..))
+import Data.Typeable (Typeable, eqT, (:~:))
+import Data.Maybe (Maybe(..))
 import Control.Monad (Monad(..))
+import GHC.Exts (Constraint)
 
+-- µPrelude
+($) :: (a -> b) -> a -> b
+($) f = \x -> f x
+infixr 0 $
+-- µPrelude
 
 -----
--- Categories: basic and flavours
+-- Category class
 -----
 
 {- | Class of Categories.
 
 Instances must satisfy the following laws:
 
-     * if @target f == source g@, then @g . f@ is not bottom
-     * if @source f == x@, then @f . id x == f@
-     * if @target f == x@, then @id x . f == f@
-     * if @h . g@ and @g . f@ are not bottom, then @(h . g) . f == h . (g . f)@
+prop> f . (idS f) == f
+prop> (idT g) . g == g
+prop> h . (g . f) == (h . g) . f
+prop> g . f == bottom "if and only if" idS g `idEq` idT f
 
 -}
 class Category (hom :: k -> k -> *) where
-    type Object hom :: k -> *
-    type Object hom = Proxy
-    
-    source          :: hom a b -> Object hom a
-    target          :: hom a b -> Object hom b
+    type ReflId hom (a :: k) (b :: k) :: Constraint
+    -- UndecideableInstances required to accept (k -> k -> Constraint)
 
-    idC             :: Object hom a -> hom a a
-    (.)             :: hom b c -> hom a b -> hom a c
+    idS     :: hom a b -> hom a a
+    idT     :: hom a b -> hom b b
+    idEq    :: ReflId hom a b
+            => hom a a -> hom b b -> Bool
 
-{- | Identity function. 
+    (.)     :: hom b c -> hom a b -> hom a c
 
-This function is provided for compatibility in modules that use 'id' from
-either the standard Prelude or the Control.Category module.
-/All/ users of the prior versions of 'id' can use this function 
-in its place.
 
-Note that 'Category' instance definitions in user code
-must still be modified to define 'idC'. /All/ such existing instances can
-be obtained by changing
+instance Category (->) where
+    type ReflId (->) a b = (Typeable a, Typeable b)
 
-> id = <code>
+    -- the only possible issue with these is that Constraints are lost
+    idS (f :: a -> b) = \x -> x :: a
+    idT (f :: a -> b) = \x -> x :: b
+    idEq (f :: a -> a) (g :: b -> b) =
+        case eqT :: Maybe (a :~: b) of
+            Just _  -> True
+            Nothing -> False
 
-to
+    g . f = \x -> g (f x)
 
-> idC Proxy = <code>
-
-The new 'Category' class can define a much larger class of categories with
-the 'idC' method, in particular those taking an argument different from 'Proxy'.
+{- | Identity of Haskell functions, a unique object.
 -}
-id :: (Category hom, Object hom ~ Proxy) => hom a a
-id = idC Proxy
+id :: a -> a
+id = \x -> x
+{-# INLINE id #-}
+
 
 {- | Natural Category
 
@@ -210,42 +220,10 @@ data MonoidalFunctor p c d where
         prem    :: ()
     } -> MonoidalFunctor p c d
 
------
--- Type families magic
------
--- These belong inside a 'Concrete' branch
-
--- canonical categories
-data family C a b
-data instance C a b                     = Arrow { runArrow :: a -> b }
-data instance C (Proxy a) (Either e b)  = ErrorArrow { runEither :: a -> Either e b }
-data instance C (a,r) (Proxy b)         = ReaderArrow { runReader :: (a,r) -> b }
-data instance C (a,s) (b,s)             = StateArrow { runState :: (a,s) -> (b,s) }
-
-
--- functors
-data family F f
---data instance F ()          -- identity functor
---data instance F Product     -- Monoidal functor over the product
---data instance F CoProduct   -- CoMonoidal functor
 
 -----
 -- Instances
 -----
-
-{-
-The Category of Haskell functions has a single class of objects.
-This class is best represented by the Haskell type 'Proxy', which
-enables type inspection and reflection.
--}
-instance Category (->) where
-    type Object (->) = Proxy
-
-    source _ = Proxy
-    target _ = Proxy
-
-    idC _ = Data.Function.id
-    (.)  = (Data.Function..)
 
 instance Product (,) where
     type One (,) = ()
@@ -265,54 +243,16 @@ instance CoProduct Either where
 -----
 
 instance (Monad m) => Category (Kleisli m) where
-    type Object (Kleisli m) = Proxy
-    
-    source _ = Proxy
-    target _ = Proxy
+    type ReflId (Kleisli m) a b = (Typeable a, Typeable b)
 
-    idC _ = Kleisli return
-    (.)  = (<<<)
+    idS (Kleisli (f :: a -> m b)) = Kleisli $ \x -> return (x :: a)
+    idT (Kleisli (f :: a -> m b)) = Kleisli $ \x -> return (x :: b)
+    idEq
+        (Kleisli (f :: a -> m a))
+        (Kleisli (g :: b -> m b)) =
+            case eqT :: Maybe (a :~: b) of
+                Just _  -> True
+                Nothing -> False
 
-
-
-{-
-instance (Category cat, Applicative f) => Category (Ap2 f cat) where
-    type Ob (Ap2 f cat) = Ap1 f (Ob cat)
-
-    source (Ap2 f) = Ap1 (fmap source f)
-    target (Ap2 f) = Ap1 (fmap target f)
-
-    id (Ap1 x) = Ap2 (fmap id x)
-
-    Ap2 g . Ap2 f =
-        Ap2 $ pure (.) <*> g <*> f
-
-newtype Ap1 f g a = Ap1 {
-    unAp1 :: f (g a)
-}
-newtype Ap2 f g a b = Ap2 {
-    unAp2 :: f (g a b)
-}
-
------
--- Functor between Categories
------
-
-class Functor c d where
-    type OMap c d a :: *
-    type FMap c d a b :: *
-
-    omap  :: (Category c, Category d)
-          => (Ob c) a -> OMap c d a
-    mmap  :: (Category c, Category d)
-          => c a b -> FMap c d a b
-
-instance (Category cat, Applicative f) => Functor cat (Ap2 f cat) where
-    type OMap cat (Ap2 f cat) a = Ap1 f (Ob cat) a
-    type FMap cat (Ap2 f cat) a b = Ap2 f cat a b
-
-    omap x = Ap1 (pure x)
-    mmap f = Ap2 (pure f)
-
--}
+    (Kleisli g) . (Kleisli f) = Kleisli (\x -> f x >>= g)
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 {-|
@@ -13,9 +13,8 @@ License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
 -}
 module Abstract.Arrow (
-		Arrow0(..),
-		Arrow1(..),
-		Arrow2(..)
+		Arrow(..),
+		ArrowTransf(..)
 	) where
 
 -- alt-base modules
@@ -36,6 +35,8 @@ const b = \_ -> b
 class (Category f) => Arrow f where
 	arr 		:: (a -> b) -> f a b
 
+class ArrowTransf f arr | f -> arr where
+	liftA		:: arr a b -> (f arr) a b
 
 -- t is a nullary transformer, hence Set
 class (Category f) => Arrow0 t f where

@@ -34,27 +34,27 @@ infixr 0 $
 -- end µPrelude
 
 newtype IdentityArrow f a b = IdentityArrow {
-    runIdentity :: f a b
+    identityArrow :: f a b
 }
 
 newtype ErrorArrow e f a b = ErrorArrow {
-    runError :: f a (Either e b)
+    errorArrow :: f a (Either e b)
 }
 
 newtype ReaderArrow r f a b = ReaderArrow {
-    runReader :: f (a,r) b
+    readerArrow :: f (a,r) b
 }
 
 newtype WriterArrow w f a b = WriterArrow {
-    runWriter :: f a (b,w)
+    writerArrow :: f a (b,w)
 }
 
 newtype StateArrow s f a b = StateArrow {
-    runState :: f (a,s) (b,s)
+    stateArrow :: f (a,s) (b,s)
 }
 
 newtype RWSArrow r w s f a b = RWSArrow {
-    runRWS :: f (a,s,r) (b,s,w)
+    rwsArrow :: f (a,s,r) (b,s,w)
 }
 
 -----

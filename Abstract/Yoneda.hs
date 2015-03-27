@@ -1,12 +1,13 @@
 {-# LANGUAGE
     NoImplicitPrelude,
     RankNTypes,
-    GADTs
+    GADTs,
+    MultiParamTypeClasses, FunctionalDependencies
   #-}
 
 {-|
 Module:             Abstract.Yoneda
-Description:        Yoneda representation of arrows
+Description:        Yoneda representation of Arrows
 Copyright:          (c) 2015 Nicolas Godbout
 Licence:            BSD-3
 Stability:          experimental
@@ -29,50 +30,79 @@ module Abstract.Yoneda (
     ) where
 
 import Abstract.Category
+import Abstract.Arrow
+import Arrow.Core
 
+import Data.Either (Either(..))
 import Data.Monoid (Monoid(..))
 
-import Prelude (($), Either(..))
+-- µPrelude
+($) :: (a -> b) -> a -> b
+($) f = \x -> f x
+infixr 0 $
+-- µPrelude
 
------
--- Specialized Categories
--- ## move to another module
------
+{- | Class of the Yoneda representation of an Arrow transormer.
 
-class Yoneda y where
-    liftY   :: forall f a b. Category f => f a b -> (forall z. (y z f) a b)
-    unliftY :: forall f a b. (forall z. (y z f) a b) -> f a b
+Instances must satisfy the laws
 
+prop> unliftY . liftY = id
+prop> liftY . unliftY = id
 
-{- | Internal Yoneda representation of an arrow in an arbitrary category.
+which constitute proof that both representations are equivalent. 
+The first law will often respect equality “on the nose”, while
+the second law will often be an equivalence, i.e., modify the
+Yoneda object while preserving its meaning and its effect.
 -}
-newtype Yoneda z f a b = Yoneda {
-    f (f b z) (f a z)
+class Yoneda y f where
+    -- | Lift a morphism into its Yoneda representation
+    liftY   :: forall a b. f a b -> (forall z. (y z) a b)
+
+    -- | Unlift a morphism from its Yoneda representation
+    unliftY :: forall a b. (forall z. (y z) a b) -> f a b
+
+{- | Internal Yoneda representation of an Arrow into itself.
+-}
+newtype EndoYoneda f z a b = EndoYoneda {
+    endoYoneda :: f (f b z) (f a z)
 }
 
+
+
+instance Arrow f => Yoneda (IdentityYoneda f) (IdentityArrow f) where
+    liftY (IdentityArrow f)     = IdentityYoneda $ \h -> h . f
+    unliftY (IdentityYoneda f)  = IdentityArrow $ f $ idC undefined
+
+
+-----
+-- type instances
+-- ## move into Arrow.Yoneda.Core re-exporting modules
+-----
+
+
 -- | Dual of @f a b@
-newtype IdentityYoneda z f a b = IdentityYoneda {
-    unliftYoneda :: f b z -> f a z
+newtype IdentityYoneda f z a b = IdentityYoneda {
+    identityYoneda :: f b z -> f a z
 }
 
 -- | Dual of @f a (Either e b)@
-newtype ErrorYoneda e z f a b = ErrorYoneda {
-    unliftErrorYoneda :: f e z -> f b z -> f a z
-}
-
--- | Dual of @f (a,r) b@
-newtype ReaderYoneda r z f a b = ReaderYoneda {
-    unliftReaderYoneda :: f b z -> f (a,r) z
-}
-
--- | Dual of @f a (b,w)@
-newtype WriterYoneda w z f a b = WriterYoneda {
-    unliftWriterYoneda :: f (b,w) z -> f a z
+newtype ErrorYoneda e f z a b = ErrorYoneda {
+    errorYoneda :: f e z -> f b z -> f a (Either z z)
 }
 
 -- | Dual of @f (a,s) (b,s)
-newtype StateYoneda s z f a b = StateYoneda {
-    unliftStateYoneda :: f (b,s) z -> f (a,s) z
+newtype StateYoneda s f z a b = StateYoneda {
+    stateYoneda :: f (b,s) z -> f (a,s) (z,z)
+}
+
+-- | Dual of @f (a,r) b@
+newtype ReaderYoneda r f z a b = ReaderYoneda {
+    readerYoneda :: f b z -> f (a,r) z
+}
+
+-- | Dual of @f a (b,w)@
+newtype WriterYoneda w f z a b = WriterYoneda {
+    writerYoneda :: f (b,w) z -> f a z
 }
 
 {-  TODO
@@ -96,7 +126,7 @@ data instance Yoneda f (a,s) (a,s)          = StateYoneda {}
 -----
 -- Instances
 -----
-
+{-
 instance Category c => Category (IdentityYoneda z c) where
     idC _ = IdentityYoneda $ id
     g . f = IdentityYoneda $
@@ -106,7 +136,7 @@ instance Yoneda IdentityYoneda where
     liftY f = IdentityYoneda $ \h -> h . f
     -- unliftY f = unliftYoneda f id
     -- ^ ## does not compile: add type annotations
-{-
+
 instance Category c => Category (ErrorYoneda e c) where
     idC proxy = ErrorYoneda $ \_ -> idC proxy
     g . f = ErrorYoneda $ \e -> unliftErrorYoneda f e . unliftErrorYoneda g e
