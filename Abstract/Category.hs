@@ -145,8 +145,7 @@ class Product p where
 
     fst     :: p a b -> a
     snd     :: p a b -> b
-    swap    :: p a b -> p b a
-
+    
 {- | Class of CoProducts.
 
 The prototypal instance of a coproduct in Haskell is @Either a b@ representing
@@ -158,7 +157,6 @@ class CoProduct s where
 
     lft     :: a -> s a b
     rgt     :: b -> s a b
-    coswap  :: s a b -> s b a
 
 {- | Void is a type with no constructor.
 
@@ -254,15 +252,12 @@ instance Product (,) where
 
     fst (x,_)   = x
     snd (_,y)   = y
-    swap (x,y)  = (y,x)
-
+    
 instance CoProduct Either where
     type Zero Either = Void
 
     rgt         = Right
     lft         = Left
-    coswap (Left a)     = Right a
-    coswap (Right b)    = Left b
 
 
 -----

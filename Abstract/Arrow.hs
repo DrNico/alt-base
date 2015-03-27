@@ -25,14 +25,19 @@ import Abstract.Category
 import Control.Applicative (Applicative(..))
 import Data.Either (Either(..))
 
--- needed from Prelude
-import Prelude (($), const)
+-- begin µPrelude
+($) :: (a -> b) -> a -> b
+($) f = \x -> f x
+infixr 0 $
+const :: b -> a -> b
+const b = \_ -> b
+-- end µPrelude
 
 class (Category f) => Arrow f where
 	arr 		:: (a -> b) -> f a b
 
 
--- t is a nullary transformer, hence Set?
+-- t is a nullary transformer, hence Set
 class (Category f) => Arrow0 t f where
 	pull0       :: (t -> b) -> f t b 	-- const b
 	push0		:: t -> f a t

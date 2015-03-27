@@ -91,16 +91,16 @@ arr :: PreArrow f => (a -> b) -> f a b
 arr f = pull (\a -> push (f a))
 
 first :: Arrow f => f a b -> f (a,c) (b,c)
-first f = pullProd (\(a,b) -> pushProd (push (f a), push b))
+first f = pullProd (\(a,b) -> pushProd (f . push a, push b))
 
 second :: Arrow f => f a b -> f (c,a) (c,b)
-second f = pullProd (\(a,b) -> pushProd (push a, push (f b)))
+second f = pullProd (\(a,b) -> pushProd (push a, f . push b))
 
 (***) :: Arrow f => f a b -> f a' b' -> f (a,a') (b,b')
-f *** g = pullProd (\(a,b) -> pushProd (push $ f a, push $ g b))
+f *** g = pullProd (\(a,b) -> pushProd (f . push a, g . push b))
 
 (&&&) :: Arrow f => f a b -> f a b' -> f a (b,b')
-f &&& g = pull (\a -> pushProd (push $ f a, push $ g a))
+f &&& g = pull (\a -> pushProd (f . push a, g . push a))
 
 -----
 -- Derived combinators
@@ -181,7 +181,7 @@ instance PreArrow (->) where
 
 instance Arrow (->) where
     pullProd f  = \(a,b) -> f (a,b) ()
-    pushProd a  = \(a,b) -> (\() -> (a,b))
+    pushProd (f,g)  = \() -> (f (),g ())
 
 
 instance ArrowChoice (->) where
@@ -200,7 +200,7 @@ instance Monad m => Category (Kleisli m) where
     g . f = Kleisli $ \x -> runKleisli f x >>= runKleisli g
 
 instance Monad m => PreArrow (Kleisli m) where
-    pull f = Kleisli $ \(a,b) -> runKleisli (f (a,b)) ()
+    pull f = Kleisli $ \a -> runKleisli (f a) ()
     push a = Kleisli $ \() -> return a
 
 
