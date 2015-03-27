@@ -12,7 +12,7 @@ Portability:        portable
 module Abstract.Transform where
 
 -- alt-base modules
-import Abstract.Arrow
+-- import Abstract.Arrow
 import Abstract.Category
 
 
@@ -26,5 +26,5 @@ In the Haskell standard, this is named the @Functor@ class. It is here
 extended as an endofunctor in any Category.
 -}
 class Transform t where
-	tmap		:: Arrow f => f a b -> f (t a) (t b)
+	tmap		:: Category f => f a b -> f (t a) (t b)
 

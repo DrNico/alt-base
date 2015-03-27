@@ -5,10 +5,11 @@ Description:        Definition of Arrow class and dependents
 Copyright:          (c) 2002 Ross Paterson
                     (c) 2015 Nicolas Godbout
 Licence:            BSD-3
-Stability:          stable
+Stability:          experimental
 Portability:        portable
 
 Definition of arrows, based on
+
   * /Generalising Monads to Arrows/, by John Hughes,
     /Science of Computer Programming/ 37, pp67-111, May 2000.
 
@@ -27,6 +28,7 @@ while relaxing class dependency constraints.
 
 module Control.Arrow (
     -- * Arrows
+    PreArrow(..),
     Arrow(..),
     -- ** compatibility combinators
     arr, first, second, (***), (&&&),
@@ -39,6 +41,8 @@ module Control.Arrow (
     ArrowZero(..), ArrowPlus(..),
     -- * Conditionals
     ArrowChoice(..),
+    -- ** compatibility combinators
+    left, right, (+++), (|||),
     -- * Arrow application,
     ArrowApply(..),
     -- * Feedback
@@ -49,7 +53,7 @@ import Control.Category (Category(..), (<<<), (>>>))
 import Control.Monad (Monad(..))
 import Data.Either (Either(..))
 
-import Prelude (($), undefined)
+import Prelude (($), const, undefined)
 
 infixr 5 <+>
 infixr 3 ***
@@ -59,42 +63,44 @@ infixr 2 |||
 -- infixr 1 ^>>, >>^
 -- infixr 1 ^<<, <<^
 
-{-| The basic arrow class.
+{- | The 'PreArrow' class is the root of all the following classes.
+It allows extraction and insertion of values into Categories that
+support it.
+-}
+class Category f => PreArrow f where
+    pull :: (a -> f () b) -> f a b
+    push :: a -> f () a
 
-Minimal complete definition: @pull@, @push@ and @swap@ satisfying the laws
+{-| The basic arrow class, as historically defined in the papers.
+
+Minimal complete definition: @pullProd@, @pushProd@
+
 prop> pull (\x -> push x) = id
 prop> swap . swap = id
--}
-class Category f => Arrow f where
-    pull :: (a -> f x y) -> f (x,a) y
-         -- a -> b -> f () c
-    push :: a -> f (x,()) (x,a)
-         -- f a b -> f a c -> f a (b,c)
-         -- prop> pull (\x y -> push (const x) (const y)) == id
-    incr :: f a (a,())
-    decr :: f (a,()) a
-    swap :: f (a,b) (b,a)
 
+-}
+class PreArrow f => Arrow f where
+    pullProd :: ((a,b) -> f () c) -> f (a,b) c
+    pushProd :: (f () b, f () c) -> f () (b,c)
+    
 -----
 -- Compatibility combinators
 -----
 
-arr :: Arrow f => (a -> b) -> f a b
-arr f = incr >>> first (arr f) >>> decr
+arr :: PreArrow f => (a -> b) -> f a b
+arr f = pull (\a -> push (f a))
 
 first :: Arrow f => f a b -> f (a,c) (b,c)
-first f = pull (\c -> f >>> incr >>> push c)
+first f = pullProd (\(a,b) -> pushProd (push (f a), push b))
 
 second :: Arrow f => f a b -> f (c,a) (c,b)
-second f = swap >>> first f >>> swap
+second f = pullProd (\(a,b) -> pushProd (push a, push (f b)))
 
 (***) :: Arrow f => f a b -> f a' b' -> f (a,a') (b,b')
-f *** g = first f >>> second g
+f *** g = pullProd (\(a,b) -> pushProd (push $ f a, push $ g b))
 
 (&&&) :: Arrow f => f a b -> f a b' -> f a (b,b')
-f &&& g = dup >>> first f >>> second g
-    where
-        dup = incr >>> swap >>> pull (\x -> incr >>> push x >>> swap >>> push x)
+f &&& g = pull (\a -> pushProd (push $ f a, push $ g a))
 
 -----
 -- Derived combinators
@@ -103,9 +109,6 @@ f &&& g = dup >>> first f >>> second g
 -- | The identity arrow, which plays the role of 'return' in arrow notation.
 returnA :: Arrow f => f a a
 returnA = id
-
-const :: Arrow f => a -> f () a
-const a = incr >>> pull (\_ -> incr >>> push a >>> swap >>> decr)
 
 -----
 -- Kleisli arrows
@@ -132,10 +135,9 @@ class Arrow arr => ArrowPlus arr where
 
 {- | Choice, for arrows that support it.
 -}
-class Arrow arr => ArrowChoice arr where
+class PreArrow arr => ArrowChoice arr where
     copull      :: (Either a b -> arr () c) -> arr (Either a b) c
     copush      :: Either (arr a b) (arr a c) -> arr a (Either b c)
-    coswap      :: arr (Either a b) (Either b a)
 
 
 left :: ArrowChoice arr => arr a b -> arr (Either a c) (Either b c)
@@ -146,13 +148,13 @@ right f = id +++ f
 
 (+++) :: ArrowChoice arr => arr a b -> arr a' b' -> arr (Either a a') (Either b b')
 f +++ g = copull $ \x -> copush $ case x of
-            Left a  -> Left $ const a >>> f
-            Right b -> Right $ const b >>> g
+            Left a  -> Left $ push a >>> f
+            Right b -> Right $ push b >>> g
 
 (|||) :: ArrowChoice arr => arr a c -> arr b c -> arr (Either a b) c
 f ||| g = copull $ \x -> case x of
-            Left a  -> const a >>> f
-            Right b -> const b >>> g
+            Left a  -> push a >>> f
+            Right b -> push b >>> g
 
 -----
 -- Arrow application
@@ -161,7 +163,6 @@ f ||| g = copull $ \x -> case x of
 -- With the new scheme, all arrows are instances of ArrowApply.
 class Arrow arr => ArrowApply arr where
     app :: arr (arr a b, a) b
-    app = swap >>> pull id
 
 -----
 -- Feedback
@@ -174,12 +175,13 @@ class Arrow arr => ArrowLoop arr where
 -- Instances
 -----
 
+instance PreArrow (->) where
+    pull f = \a -> f a ()
+    push a = \() -> a
+
 instance Arrow (->) where
-    pull f = \(x,a) -> f a x
-    push a = \(x,()) -> (x,a)
-    swap   = \(x,y) -> (y,x)
-    incr   = \x -> (x,())
-    decr   = \(x,()) -> x
+    pullProd f  = \(a,b) -> f (a,b) ()
+    pushProd a  = \(a,b) -> (\() -> (a,b))
 
 
 instance ArrowChoice (->) where
@@ -187,9 +189,6 @@ instance ArrowChoice (->) where
 
     copush (Left f)    = \x -> Left (f x)
     copush (Right g)   = \x -> Right (g x)
-    
-    coswap (Right a)   = Left a
-    coswap (Left a)    = Right a
 
 
 instance ArrowApply (->) where
@@ -200,22 +199,15 @@ instance Monad m => Category (Kleisli m) where
     id = Kleisli return
     g . f = Kleisli $ \x -> runKleisli f x >>= runKleisli g
 
+instance Monad m => PreArrow (Kleisli m) where
+    pull f = Kleisli $ \(a,b) -> runKleisli (f (a,b)) ()
+    push a = Kleisli $ \() -> return a
+
 
 instance Monad m => Arrow (Kleisli m) where
-    pull f = Kleisli $ \(x,a) -> runKleisli (f a) x
-    push a = Kleisli $ \(x,()) -> return (x,a)
-    swap   = Kleisli $ \(x,y) -> return (y,x)
-    incr   = Kleisli $ \x -> return (x,())
-    decr   = Kleisli $ \(x,()) -> return x
 
 
 instance Monad m => ArrowChoice (Kleisli m) where
-    copull f           = Kleisli $ \x -> runKleisli (f x) ()
-
-    copush (Left f)    = Kleisli $ \x -> runKleisli f x >>= return . Left
-    copush (Right f)   = Kleisli $ \x -> runKleisli f x >>= return . Right
-
-    coswap             = Kleisli $ return . coswap
 
 
 

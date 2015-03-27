@@ -11,7 +11,6 @@ Description     : Class of Categories, Functors and Natural Transformations
 Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
-Stability       : Experimental
 -}
 module Abstract.Category (
         -- * Categories
@@ -44,11 +43,13 @@ import Control.Monad (Monad(..))
 
 {- | Class of Categories.
 
-Instances should satisfy the following laws:
-     * if @target f == source g@, then @g . f@ is well-defined
+Instances must satisfy the following laws:
+
+     * if @target f == source g@, then @g . f@ is not bottom
      * if @source f == x@, then @f . id x == f@
      * if @target f == x@, then @id x . f == f@
-     * if @h . g . f@ is well-defined, then @(h . g) . f == h . (g . f)@
+     * if @h . g@ and @g . f@ are not bottom, then @(h . g) . f == h . (g . f)@
+
 -}
 class Category (hom :: k -> k -> *) where
     type Object hom :: k -> *
@@ -64,14 +65,17 @@ class Category (hom :: k -> k -> *) where
 
 This function is provided for compatibility in modules that use 'id' from
 either the standard Prelude or the Control.Category module.
-_All_ users of the prior versions of 'id' can use this function 
+/All/ users of the prior versions of 'id' can use this function 
 in its place.
 
 Note that 'Category' instance definitions in user code
-must still be modified to define 'idC'. _All_ such existing instances can
+must still be modified to define 'idC'. /All/ such existing instances can
 be obtained by changing
+
 > id = <code>
+
 to
+
 > idC Proxy = <code>
 
 The new 'Category' class can define a much larger class of categories with
@@ -98,8 +102,7 @@ a category is one where arrows can manipulate tuples.
 class (Category f, Product p) => Monoidal f p where
     pull    :: (p a b -> f (One p) c) -> f (p a b) c
     push    :: p (f a b) (f a c) -> f a (p b c)
-    const   :: a -> f (One p) a
-
+    
 {- | CoMonoidal Category
 
 Class of Categories having a coproduct, sometimes also called a sum.
@@ -111,7 +114,6 @@ coproduct.
 class (Category f, CoProduct s) => CoMonoidal f s where
     copull  :: (s a b -> f (Zero s) c) -> f (s a b) c
     copush  :: s (f a b) (f a c) -> f a (s b c)
-    void    :: f a (Zero s)
 
 
 -----
@@ -172,7 +174,7 @@ data Void
 
 {- | Prototypal functor from Category @c@ to Category @d@
 
-Functors of course form a Category over Categories, hence are also an instance
+Functors form a Category over Categories, hence are also an instance
 of Category.
 
 Example:
@@ -186,7 +188,7 @@ for Lists. An endo-functor in (->), i.e., a record of
 Now suppose that primed types are the corresponding List type, such that 
 @a' ~ List a@ and @b' ~ List b@. The record therefore has components
 
-> pre   :: (a -> ([a] -> [b)) -> ([a] -> b)
+> pre   :: ([a] -> ([] -> b)) -> ([a] -> b)
 > post  :: (a -> (a -> [b])) -> (a -> [b])
 
 -}
@@ -196,11 +198,14 @@ data ArrowFunctor c d where
         post    :: d a (c a b') -> c a b'
     } -> ArrowFunctor c d
 
+{-
 instance Category ArrowFunctor where
     idC _ = ArrowFunctor {
             pre  = \c -> idC (source c),
             post = \d -> idC (source d)
         }
+
+-}
 
 data MonoidalFunctor p c d where
     MonoidalFunctor :: {
@@ -315,3 +320,4 @@ instance (Category cat, Applicative f) => Functor cat (Ap2 f cat) where
     mmap f = Ap2 (pure f)
 
 -}
+
