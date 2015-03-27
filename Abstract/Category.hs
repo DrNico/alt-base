@@ -11,36 +11,35 @@
 
 {-|
 Module          : Abstract.Category
-Description     : Class of Categories, Functors and Natural Transformations
+Description     : Class of Categories
 Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
+
+This module is the foundation of the alt-base package and is imported by
+most other modules.
 -}
 module Abstract.Category (
         -- * Categories
         Category(..), id,
-        Monoidal(..),
-        CoMonoidal(..),
         -- * Objects
         Product(..),
         CoProduct(..),
-        Void,
-        -- * Functors
-        ArrowFunctor(..)
+        Void
     ) where
 
 -- alt-base modules: no dependencies, this is a root module
 
--- compatibility modules
-import Control.Arrow (Kleisli(..))
-
--- needed standard modules
+-- base modules
 import Data.Bool (Bool(..))
 import Data.Either (Either(..))
 import Data.Typeable (Typeable, eqT, (:~:))
 import Data.Maybe (Maybe(..))
 import Control.Monad (Monad(..))
 import GHC.Exts (Constraint)
+
+-- compatibility modules
+import Control.Arrow (Kleisli(..))
 
 -- µPrelude
 ($) :: (a -> b) -> a -> b
@@ -64,8 +63,7 @@ prop> g . f == bottom "if and only if" idS g `idEq` idT f
 -}
 class Category (hom :: k -> k -> *) where
     type ReflId hom (a :: k) (b :: k) :: Constraint
-    -- UndecideableInstances required to accept (k -> k -> Constraint)
-
+    
     idS     :: hom a b -> hom a a
     idT     :: hom a b -> hom b b
     idEq    :: ReflId hom a b
@@ -77,53 +75,26 @@ class Category (hom :: k -> k -> *) where
 instance Category (->) where
     type ReflId (->) a b = (Typeable a, Typeable b)
 
-    -- the only possible issue with these is that Constraints are lost
+    {-# INLINE idS #-}
     idS (f :: a -> b) = \x -> x :: a
+
+    {-# INLINE idT #-}
     idT (f :: a -> b) = \x -> x :: b
+
+    {-# INLINE idEq #-}
     idEq (f :: a -> a) (g :: b -> b) =
         case eqT :: Maybe (a :~: b) of
             Just _  -> True
             Nothing -> False
 
+    {-# INLINE (.) #-}
     g . f = \x -> g (f x)
 
-{- | Identity of Haskell functions, a unique object.
+{- | Identity of Haskell functions, a unique polymorphic object.
 -}
 id :: a -> a
-id = \x -> x
 {-# INLINE id #-}
-
-
-{- | Natural Category
-
-Class of Categories arising from a natural transformation, starting
-from any base Category. The class methods provide helpers to build
-folding and unfolding arrows.
--}
-class (Category f, Transform t) => Natural f t where
-    mkfold      :: (t a -> f () b) -> f (t a) b
-    mkunfold    :: (t (f a b)) -> f a (t b)
-
-{- | Monoidal Category
-
-Class of Categories having a product. The prototypal example of such
-a category is one where arrows can manipulate tuples.
--}
-class (Category f, Product p) => Monoidal f p where
-    pull    :: (p a b -> f (One p) c) -> f (p a b) c
-    push    :: p (f a b) (f a c) -> f a (p b c)
-    
-{- | CoMonoidal Category
-
-Class of Categories having a coproduct, sometimes also called a sum.
-The prototypal example of such a category is one with choice, such
-as programming languages having control-flow, i.e., if-then-else or
-an equivalent. In Haskell, the 'Either' type is the quintessential
-coproduct.
--}
-class (Category f, CoProduct s) => CoMonoidal f s where
-    copull  :: (s a b -> f (Zero s) c) -> f (s a b) c
-    copush  :: s (f a b) (f a c) -> f a (s b c)
+id = \x -> x
 
 
 -----
@@ -176,50 +147,6 @@ isomorphic to Void.
 -}
 data Void
 
------
--- Functors: basic and flavours
------
-
-{- | Prototypal functor from Category @c@ to Category @d@
-
-Functors form a Category over Categories, hence are also an instance
-of Category.
-
-Example:
-This example shows that the Functor datatype can encode the @map@ function
-for Lists. An endo-functor in (->), i.e., a record of
-@ArrowFunctor (->) (->)@ has members
-
-> pre   :: (a' -> (a -> b)) -> (a' -> b)
-> post  :: (a -> (a -> b')) -> (a -> b')
-
-Now suppose that primed types are the corresponding List type, such that 
-@a' ~ List a@ and @b' ~ List b@. The record therefore has components
-
-> pre   :: ([a] -> ([] -> b)) -> ([a] -> b)
-> post  :: (a -> (a -> [b])) -> (a -> [b])
-
--}
-data ArrowFunctor c d where
-    ArrowFunctor :: (Category c, Category d) => {
-        pre     :: c a' (d a b) -> d a' b,
-        post    :: d a (c a b') -> c a b'
-    } -> ArrowFunctor c d
-
-{-
-instance Category ArrowFunctor where
-    idC _ = ArrowFunctor {
-            pre  = \c -> idC (source c),
-            post = \d -> idC (source d)
-        }
-
--}
-
-data MonoidalFunctor p c d where
-    MonoidalFunctor :: {
-        prem    :: ()
-    } -> MonoidalFunctor p c d
-
 
 -----
 -- Instances
@@ -245,8 +172,13 @@ instance CoProduct Either where
 instance (Monad m) => Category (Kleisli m) where
     type ReflId (Kleisli m) a b = (Typeable a, Typeable b)
 
+    {-# INLINE idS #-}
     idS (Kleisli (f :: a -> m b)) = Kleisli $ \x -> return (x :: a)
+    
+    {-# INLINE idT #-}
     idT (Kleisli (f :: a -> m b)) = Kleisli $ \x -> return (x :: b)
+
+    {-# INLINE idEq #-}
     idEq
         (Kleisli (f :: a -> m a))
         (Kleisli (g :: b -> m b)) =
@@ -254,5 +186,6 @@ instance (Monad m) => Category (Kleisli m) where
                 Just _  -> True
                 Nothing -> False
 
+    {-# INLINE (.) #-}
     (Kleisli g) . (Kleisli f) = Kleisli (\x -> f x >>= g)
 
