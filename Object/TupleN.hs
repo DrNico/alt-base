@@ -18,10 +18,9 @@ module Object.TupleN (
 import Abstract.Category (Product(..))
 
 
-data TupleN a r where
+data TupleN a r where 
 	NilTN		:: TupleN () ()
 	ConsTN		:: a -> TupleN b r -> TupleN a (TupleN b r)
-
 
 instance Product TupleN where
 	type One TupleN = TupleN () ()

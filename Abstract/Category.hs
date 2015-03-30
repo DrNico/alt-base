@@ -71,6 +71,20 @@ class Category (hom :: k -> k -> *) where
 
     (.)     :: hom b c -> hom a b -> hom a c
 
+{- TODO:
+class Category (hom :: k -> k -> *) where
+    idS     :: hom a b -> hom a a
+    IdT     :: hom a b -> hom b b
+
+    <.>     :: Witness w b b'
+            => w
+            -> hom b' c -> hom a b
+            -> hom a c
+
+class Witness (w :: k -> k -> *) where
+    witness :: a -> b -> Maybe (w a b)
+-}
+
 
 instance Category (->) where
     type ReflId (->) a b = (Typeable a, Typeable b)

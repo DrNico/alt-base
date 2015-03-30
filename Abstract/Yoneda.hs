@@ -56,10 +56,10 @@ Yoneda object while preserving its meaning and its effect.
 -}
 class Yoneda y f where
     -- | Lift a morphism into its Yoneda representation
-    liftY   :: forall a b. f a b -> (forall z. (y z) a b)
+    toYoneda    :: forall a b. f a b -> (forall z. (y z) a b)
 
     -- | Unlift a morphism from its Yoneda representation
-    unliftY :: forall a b. (forall z. (y z) a b) -> f a b
+    fromYoneda  :: forall a b. (forall z. (y z) a b) -> f a b
 
 {- | Internal Yoneda representation of an Arrow into itself.
 -}
@@ -70,8 +70,8 @@ newtype EndoYoneda f z a b = EndoYoneda {
 
 
 instance Arrow f => Yoneda (IdentityYoneda f) (IdentityArrow f) where
-    liftY (IdentityArrow f)     = IdentityYoneda $ \h -> h . f
-    unliftY (IdentityYoneda f)  = IdentityArrow $ f $ idC undefined
+    toYoneda (IdentityArrow f)     = IdentityYoneda $ \h -> h . f
+    fromYoneda (IdentityYoneda f)  = IdentityArrow $ f id  -- BUG here
 
 
 -----
@@ -87,12 +87,12 @@ newtype IdentityYoneda f z a b = IdentityYoneda {
 
 -- | Dual of @f a (Either e b)@
 newtype ErrorYoneda e f z a b = ErrorYoneda {
-    errorYoneda :: f e z -> f b z -> f a (Either z z)
+    errorYoneda :: f e z -> f b z -> f a z
 }
 
 -- | Dual of @f (a,s) (b,s)
 newtype StateYoneda s f z a b = StateYoneda {
-    stateYoneda :: f (b,s) z -> f (a,s) (z,z)
+    stateYoneda :: f (b,s) (z,z) -> f (a,s) z
 }
 
 -- | Dual of @f (a,r) b@
@@ -102,7 +102,7 @@ newtype ReaderYoneda r f z a b = ReaderYoneda {
 
 -- | Dual of @f a (b,w)@
 newtype WriterYoneda w f z a b = WriterYoneda {
-    writerYoneda :: f (b,w) z -> f a z
+    writerYoneda :: f (b,w) (z,z) -> f a z
 }
 
 {-  TODO

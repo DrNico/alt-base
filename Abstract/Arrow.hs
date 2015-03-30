@@ -4,7 +4,6 @@
         PolyKinds,
         GADTs,
         MultiParamTypeClasses,
-        FunctionalDependencies,
         FlexibleInstances
   #-}
 
@@ -26,7 +25,7 @@ This module fully supports GHC's arrow notation. Import it instead of
 "Control.Arrow" and add the following pragma
 at the head of the modules importing this one.
 
-> &#x7B;-# LANGUAGE Arrows, RebindableSyntax #-&#x7D;
+> {-# LANGUAGE Arrows, RebindableSyntax #-}
 
 Note that this implies @NoImplicitPrelude@, so you may have to add
 
@@ -96,14 +95,23 @@ infixr 2 |||
 {- | The basic Arrow class.
 -}
 class Category f => Arrow f where
-    const       :: a -> f () a
     arr         :: (a -> f () b) -> f a b
+    const       :: a -> f () a
+
+--  lambda      :: (a -> f () b) -> f a b
+--  unlambda    :: f a (f () b) -> f a b
 
 {- | The class of arrows over tuples. This allows an arrow to carry a state.
 -}
 class Arrow f => ArrowProd f where
     pull        :: ((a,b) -> f () c) -> f (a,b) c
     push        :: (f a b, f a c) -> f a (b,c)
+
+-- These should be (in pseudo-Haskell)
+--  pull        :: (a -> f b* c) -> f (a b*) c
+--  push        :: f a (f b* c) -> f a c
+-- corresponding to Dependent fold and unfold !!!
+
 
 -- | Send the first component of the input through the argument
 --   arrow, and copy the rest unchanged to the output.
@@ -134,6 +142,11 @@ f &&& g = arr $ \x -> push (f . const x, g . const x)
 class Arrow f => ArrowSum f where
     copull      :: (Either a b -> f () c) -> f (Either a b) c
     copush      :: Either (f a b) (f a c) -> f a (Either b c)
+
+-- These should be (in pseudo-Haskell)
+--  copull      :: (a -> f b+ c) -> f (a + b+) c
+--  copush      :: (f a b + f a c+) -> f a (b + c+)
+-- Dependent sum types !
 
 -- | Feed marked inputs through the argument arrow, passing the
 --   rest through unchanged to the output.
