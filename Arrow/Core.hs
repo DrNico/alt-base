@@ -27,11 +27,9 @@ import Abstract.Category
 -- base modules
 import Data.Either (Either(..))
 
--- begin µPrelude
-($) :: (a -> b) -> a -> b
-($) f = \x -> f x
-infixr 0 $
--- end µPrelude
+-- alt-base Prelude
+import Alt.Prelude
+
 
 newtype IdentityArrow f a b = IdentityArrow {
     identityArrow :: f a b
@@ -56,6 +54,12 @@ newtype StateArrow s f a b = StateArrow {
 newtype RWSArrow r w s f a b = RWSArrow {
     rwsArrow :: f (a,s,r) (b,s,w)
 }
+
+
+newtype STArrow f a b = STArrow {
+    stArrow :: forall s. (a, ST s) -> (b, ST s)
+}
+-- or something like that...
 
 -----
 -- Instances

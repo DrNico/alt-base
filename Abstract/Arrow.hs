@@ -80,12 +80,9 @@ import Object.Identity
 import Control.Applicative (Applicative(..))
 import Data.Either (Either(..))
 
--- begin µPrelude
-import Prelude (undefined, error)
-($) :: (a -> b) -> a -> b
-($) f = \x -> f x
-infixr 0 $
--- end µPrelude
+-- alt-base Prelude
+import Alt.Prelude
+
 
 infixr 3 ***
 infixr 3 &&&
@@ -98,19 +95,17 @@ class Category f => Arrow f where
     arr         :: (a -> f () b) -> f a b
     const       :: a -> f () a
 
---  lambda      :: (a -> f () b) -> f a b
---  unlambda    :: f a (f () b) -> f a b
-
 {- | The class of arrows over tuples. This allows an arrow to carry a state.
 -}
 class Arrow f => ArrowProd f where
     pull        :: ((a,b) -> f () c) -> f (a,b) c
     push        :: (f a b, f a c) -> f a (b,c)
+--  pull        :: (a -> f b c) -> f (a,b) c
+--  push        :: a -> f b (a,b)
 
 -- These should be (in pseudo-Haskell)
 --  pull        :: (a -> f b* c) -> f (a b*) c
---  push        :: f a (f b* c) -> f a c
--- corresponding to Dependent fold and unfold !!!
+--  push        :: a -> f b* (a b*)
 
 
 -- | Send the first component of the input through the argument
@@ -145,8 +140,7 @@ class Arrow f => ArrowSum f where
 
 -- These should be (in pseudo-Haskell)
 --  copull      :: (a -> f b+ c) -> f (a + b+) c
---  copush      :: (f a b + f a c+) -> f a (b + c+)
--- Dependent sum types !
+--  copush      :: (f a b + f a c) -> f a (b + c)
 
 -- | Feed marked inputs through the argument arrow, passing the
 --   rest through unchanged to the output.
