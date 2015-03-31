@@ -4,7 +4,9 @@
 
 module Alt.Prelude (
 		($),
-		Prelude.undefined
+		-- re-exports
+		Prelude.undefined,
+		Prelude.error
 	) where
 
 import qualified Prelude (undefined, error)
