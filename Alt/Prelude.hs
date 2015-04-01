@@ -11,7 +11,7 @@ Maintainer      : nicolas.godbout@gmail.com
 
 Small Prelude for use with other modules.
 
-Remark: Please use this prelude's '($)' operator. The standard Prelude version does
+Remark: Please use this prelude's '$' operator. The standard Prelude version does
 not compose well with this package's combinators.
 -}
 module Alt.Prelude (
@@ -32,15 +32,13 @@ infixr 0 $
 Use cases:
 
   * As a section
-
+	
     > map (($) f) xs
-
+	
 	where this expression produces much cleaner code than both the Prelude
-	version of @($)@ and the simpler-looking
+	version of @($)@ and the simpler-looking @map f xs@.
 
-	> map f xs
-
-  * As a replacement for parentheses.
+  * As a replacement for parentheses
 
     > f $ g y $ h z == f (g y (h z))
 

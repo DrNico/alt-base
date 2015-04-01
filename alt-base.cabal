@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                alt-base
-version:             0.1.0.0
+version:             0.1.0
 synopsis:            Alternate 'base' package with Category Theory foundations
 description:         This package provides a set of modules replacing major
                      classes from the 'base' package for a new set based
@@ -16,16 +16,25 @@ license:             BSD3
 license-file:        LICENSE
 author:              Nicolas Godbout
 maintainer:          nicolas.godbout@gmail.com
--- copyright:           
+copyright:           (c) 2015 Nicolas Godbout
 category:            Control
 build-type:          Simple
+stability:           experimental
 -- extra-source-files:  
 cabal-version:       >=1.10
 
+
 library
-  exposed-modules:     Abstract.Arrow, Abstract.Category, Abstract.Transform, Abstract.Yoneda, Alt.Control.Arrow
+  exposed-modules:
+    Alt.Category, Alt.Arrow, Alt.Prelude, 
+    Alt.Object.Identity, Alt.Object.Reflection
   -- other-modules:       
-  other-extensions:    NoImplicitPrelude, TypeFamilies, PolyKinds, GADTs, MultiParamTypeClasses, FunctionalDependencies, RankNTypes
+  other-extensions:    NoImplicitPrelude, GADTs, PolyKinds, RankNTypes, TypeFamilies, TypeOperators, MultiParamTypeClasses
   build-depends:       base >=4.7 && <4.8
   -- hs-source-dirs:      
   default-language:    Haskell2010
+
+source-repository this
+  type: git
+  location: git://github.com/DrNico/alt-base.git
+  tag: alt-base-v0.1.0

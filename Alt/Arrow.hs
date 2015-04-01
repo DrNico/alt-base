@@ -3,7 +3,9 @@
         GADTs,
         PolyKinds,
         TypeFamilies,
+        TypeOperators,
         FlexibleInstances,
+        ScopedTypeVariables,
         MultiParamTypeClasses
     #-}
 
@@ -15,12 +17,12 @@ Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
 
-=1 Arrow
-=2 Overview
+= Arrow
+== Overview
 This is the greatest module ever. See
 <http://www.greatest.ever/paper/>
 
-=2 Compatibility
+== Compatibility
 This module fully supports GHC's arrow notation. Import it instead of
 "Control.Arrow" and add the following pragma
 at the head of the modules importing this one.
@@ -36,7 +38,7 @@ with the list of symbols that are used.
 User-defined instances of the old Arrow class and its derivatives have
 to be redefined to be compatible with this package.
 
-=2 Historical Note
+== Historical Note
 The original formulation of arrows is exposed in
 
   * /Generalising Monads to Arrows/, John Hughes, /Science
@@ -80,6 +82,7 @@ import Alt.Object.Identity
 -- base modules
 import Control.Applicative (Applicative(..))
 import Data.Either (Either(..))
+import Data.Typeable ((:~:), Proxy(..))
 
 -- alt-base Prelude
 import Alt.Prelude

@@ -22,7 +22,7 @@ module Alt.Arrow.Core (
     ) where
 
 -- alt-base modules
-import Abstract.Category
+import Alt.Category
 
 -- base modules
 import Data.Either (Either(..))
@@ -33,7 +33,8 @@ import Alt.Prelude
 
 newtype IdentityArrow f a b = IdentityArrow {
     identityArrow :: f a b
-}
+} deriving (Category, CatHaskell)
+
 
 newtype ErrorArrow e f a b = ErrorArrow {
     errorArrow :: f a (Either e b)
