@@ -79,6 +79,19 @@ instance Arrow f => Yoneda (IdentityYoneda f) (IdentityArrow f) where
 -- ## move into Arrow.Yoneda.Core re-exporting modules
 -----
 
+-- | Covariant Hom functor
+newtype IdYoneda f z a b = IdYoneda {
+    idYoneda :: f z a -> f z b
+}
+{- Remarks:
+    1. This is a functor, taking morphisms to morphisms
+    2. 
+-}
+
+-- | Contravariant Hom functor
+newtype IdCoYoneda f z a b = IdCoYoneda {
+    idCoYoneda :: f b z -> f a z
+}
 
 -- | Dual of @f a b@
 newtype IdentityYoneda f z a b = IdentityYoneda {

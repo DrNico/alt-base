@@ -48,7 +48,7 @@ These papers and more information on arrows can be found at
 <http://www.haskell.org/arrows/>.
 -}
 
-module Abstract.Arrow (
+module Alt.Arrow (
         -- * Simple Arrows
         -- ** The root Arrow class
         Arrow(..),
@@ -73,8 +73,8 @@ module Abstract.Arrow (
     ) where
 
 -- alt-base modules
-import Abstract.Category
-import Object.Identity
+import Alt.Category
+import Alt.Object.Identity
 
 -- base modules
 import Control.Applicative (Applicative(..))
@@ -89,9 +89,11 @@ infixr 3 &&&
 infixr 2 +++
 infixr 2 |||
 
+-- TODO: Arrows should really be defined over LARGE categories.
+
 {- | The basic Arrow class.
 -}
-class Category f => Arrow f where
+class LargeCategory f => Arrow f where
     arr         :: (a -> f () b) -> f a b
     const       :: a -> f () a
 
@@ -100,8 +102,6 @@ class Category f => Arrow f where
 class Arrow f => ArrowProd f where
     pull        :: ((a,b) -> f () c) -> f (a,b) c
     push        :: (f a b, f a c) -> f a (b,c)
---  pull        :: (a -> f b c) -> f (a,b) c
---  push        :: a -> f b (a,b)
 
 -- These should be (in pseudo-Haskell)
 --  pull        :: (a -> f b* c) -> f (a b*) c
@@ -194,7 +194,7 @@ class (Arrow arr, Arrow (f arr)) => ArrowTrans f arr where
 can bring enlightenment about theoretical category theory, having to
 do with initial and final objects.
 -}
-class (Category f) => Arrow0 t f where
+class (LargeCategory f) => Arrow0 t f where
     pull0       :: (t -> b) -> f t b    -- const b
     push0       :: t -> f a t
     -- if t is a Product, then push0 == const One
@@ -203,7 +203,7 @@ class (Category f) => Arrow0 t f where
 {- | Template of an Arrow involving a 1-ary type function. It forms the
 basis of 'fold' and 'unfold' functions.
 -}
-class (Category f) => Arrow1 t f where
+class (LargeCategory f) => Arrow1 t f where
     pull1       :: (t a -> b) -> f (t a) b
     push1       :: t (a -> b) -> f a (t b)
     -- if t == Id then pull1 == push1 ~ arr
@@ -211,7 +211,7 @@ class (Category f) => Arrow1 t f where
 {- | Template of an Arrow involving a 2-ary type function. Inspecting its
 type yields enlightenment about products and coproducts in a category.
 -}
-class (Category f) => Arrow2 t f where
+class (LargeCategory f) => Arrow2 t f where
     pull2       :: (t a b -> c) -> f (t a b) c
     push2       :: t (a -> b) (a -> c) -> f a (t b c)
     -- if t is a Product, then this Category is Monoidal
@@ -246,6 +246,13 @@ instance ArrowSum (->) where
     {-# INLINE copush #-}
     copush (Left f)  = \x -> Left (f x)
     copush (Right g) = \y -> Right (g y)
+
+instance ArrowApply (->) where
+    app = \(f,a) -> f a
+
+instance ArrowLoop (->) where
+    loop f = \x -> let (e,y) = f (e,x) in y
+
 
 instance Arrow0 t (->) where
     pull0 = id

@@ -1,5 +1,5 @@
 
-module Arrow.Parser where
+module Alt.Arrow.Parser where
 
 
 newtype ArrowParser e f a b = ArrowParser {

@@ -8,7 +8,7 @@
   #-}
 
 {-|
-Module          : Abstract.Category
+Module          : Alt.Category
 Description     : Class of Categories
 Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
@@ -17,18 +17,16 @@ Maintainer      : nicolas.godbout@gmail.com
 This module is the foundation of the alt-base package and is imported by
 most other modules.
 -}
-module Abstract.Category (
+module Alt.Category (
 		-- * Category class
 		Category(..),
 		-- * Type-level (large) categories.
-		id, (.),
-		-- * Term-level (small) categories.
-		(:=:)(..), eqTerm
+		LargeCategory(..)
 	) where
 
 -- alt-base modules
-import Abstract.Reflection
-import Object.Identity
+import Alt.Object.Reflection
+import Alt.Object.Identity
 
 -- base modules
 import Data.Bool (Bool(..))
@@ -36,6 +34,11 @@ import Data.Eq (Eq(..))
 import Data.Maybe (Maybe(..))
 import Data.Typeable
 
+
+-----
+-- Comment:
+--   cute, but we really need to distinguish between small and large categories
+----
 
 {- | Class of Categories.
 
@@ -65,15 +68,20 @@ class Category hom where
 			-> hom b' c -> hom a b
 			-> hom a c
 
-id :: (Category c, Obj c a ~ Proxy a) => c a a
-{-# INLINE id #-}
-id = idC Proxy
+class Category hom => LargeCategory hom where
+	id  :: hom a a
+	(.) :: hom b c -> hom a b
+	    -> hom a c
 
-(.) :: (Category hom, IfC hom b b ~ (b :~: b))
-    => hom b c -> hom a b
-    -> hom a c
-{-# INLINE (.) #-}
-g . f = dotW Refl g f
+-- id :: (Category c, Obj c a ~ Proxy a) => c a a
+-- {-# INLINE id #-}
+-- id = idC Proxy
+
+-- (.) :: (Category hom, IfC hom b b ~ (b :~: b))
+--     => hom b c -> hom a b
+--     -> hom a c
+-- {-# INLINE (.) #-}
+-- g . f = dotW Refl g f
 
 
 instance Category (->) where
@@ -88,6 +96,14 @@ instance Category (->) where
 	{-# INLINE dotW #-}
 	dotW Refl = \g f -> \x -> g (f x)
 
+instance LargeCategory (->) where
+	{-# INLINE id #-}
+	id = \x -> x
+
+	{-# INLINE (.) #-}
+	g . f = \x -> g (f x)
+
+
 instance Category (,) where
 	type IfC (,) a b = a :=: b
 	type Obj (,) a   = a
@@ -99,21 +115,3 @@ instance Category (,) where
 
 	{-# INLINE dotW #-}
 	dotW (Equal _) = \(_,y) (x,_) -> (x,y)
-
-
-
-{- | Term equality.
-
-Term equality is inhabited if both the types and the values of given arguments
-are equal.
--}
-data a :=: b where
-    Equal   :: a -> a :=: a
-
-eqTerm :: (Typeable a, Typeable b, Eq a) => a -> b -> Maybe (a :=: b)
-eqTerm (x :: a) (y :: b) =
-    case eqT :: Maybe (a :~: b) of
-        Just Refl ->
-            case x == y of
-                True -> Just (Equal x)
-                False -> Nothing

@@ -3,7 +3,7 @@
   #-}
 
 {-|
-Module:             Arrow.Core
+Module:             Alt.Arrow.Core
 Description:        Basic Arrows: Identity, Error, Reader, Writer, State, RWS
 Copyright:          (c) 2015 Nicolas Godbout
 Licence:            BSD-3
@@ -12,7 +12,7 @@ Stability:          experimental
 This module re-exports a select set of Arrows.
 -}
 
-module Arrow.Core (
+module Alt.Arrow.Core (
         IdentityArrow(..),
         ErrorArrow(..),
         ReaderArrow(..),

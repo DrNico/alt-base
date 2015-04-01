@@ -1,12 +1,12 @@
 {-# LANGUAGE
         NoImplicitPrelude,
         GADTs,
-        MultiParamTypeClasses,
-        TypeFamilies,
         PolyKinds,
-        ScopedTypeVariables,
+        TypeFamilies,
         TypeOperators,
-        ConstraintKinds
+        ConstraintKinds,
+        ScopedTypeVariables,
+        MultiParamTypeClasses
   #-}
 
 {-|
@@ -50,8 +50,15 @@ data FunctorArrow c d where
 -}
 data MonoidalFunctor p c d where
     MonoidalFunctor :: {
-        prem    :: ()
+        prem    :: (),
+        postm   :: ()
     } -> MonoidalFunctor p c d
+
+data CoMonoidalFunctor s c d where
+    CoMonoidalFunctor :: {
+        pres    :: (),
+        posts   :: ()
+    } -> CoMonoidalFunctor s c d
 
 {- | #Example# == Example
 This example shows that the Functor datatype can encode the @map@ function
@@ -64,7 +71,7 @@ for Lists. An endo-functor in (->), i.e., a record of
 Now suppose that primed types are the corresponding List type, such that 
 @a' ~ List a@ and @b' ~ List b@. The record therefore has components
 
-> pre   :: ([a] -> ([] -> b)) -> ([a] -> b)
+> pre   :: ([a] -> (a -> b)) -> ([a] -> b)
 > post  :: (a -> (a -> [b])) -> (a -> [b])
 
 -}

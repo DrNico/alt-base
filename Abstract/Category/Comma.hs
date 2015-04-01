@@ -15,9 +15,27 @@ module Abstract.Category.Comma (
 
 
 
+class (LargeCategory f) => Arrow2 t f where
+    pull2       :: (t a b -> c) -> f (t a b) c
+    push2       :: t (a -> b) (a -> c) -> f a (t b c)
+
+data Comma f g = Comma {
+	cleft 		:: ()
+}
+
+
 -- write two functions proving the existence of a commuting square
 -- see Wikipeda on Comma Category
-data CommaWitness f s t = CommaWitness {
-	sFunctor 	:: ,
+data Comma (f (S a) (T b))
+		   (g a a') 
+		   (h b b')  
+			= Comma {
+	sFunctor 	:: 
 	tFunctor 	:: 
 }
+
+f  : C S(a) T(b)
+f' : C S(a') T(b')
+g : A a a'
+h : B b b'
+S(g) . f' == f . T(h)
