@@ -20,8 +20,8 @@ most other modules.
 module Alt.Category (
 		-- * Category class
 		Category(..),
-		-- * Type-level (large) categories.
-		LargeCategory(..)
+		-- * Haskell category
+		CatHaskell(..)
 	) where
 
 -- alt-base modules
@@ -51,7 +51,7 @@ prop> g . f == bottom "if and only if" idS g `idEq` idT f
 
 -}
 class Category hom where
-	type IfC hom a b :: *
+	type EqC hom a b :: *
 	type Obj hom a   :: *
 
 	-- | Get the source of the morphism.
@@ -64,39 +64,43 @@ class Category hom where
 	idC		:: Obj hom a -> hom a a
 
 	-- | Composition with a witness.
-	dotW 	:: IfC hom b b'
+	dotW 	:: EqC hom b b'
 			-> hom b' c -> hom a b
 			-> hom a c
 
-class Category hom => LargeCategory hom where
+{- | Category of Haskell function-like morphisms.
+
+Instances of this category have the property that Haskell can determine
+composability at compile-time using the type-system.
+
+Instances satisfy the laws:
+
+> EqC hom a b ~ (a :~: b)
+> Obj hom a   ~ Proxy a
+
+-}
+class Category hom => CatHaskell hom where
 	id  :: hom a a
 	(.) :: hom b c -> hom a b
 	    -> hom a c
 
--- id :: (Category c, Obj c a ~ Proxy a) => c a a
--- {-# INLINE id #-}
--- id = idC Proxy
-
--- (.) :: (Category hom, IfC hom b b ~ (b :~: b))
---     => hom b c -> hom a b
---     -> hom a c
--- {-# INLINE (.) #-}
--- g . f = dotW Refl g f
-
 
 instance Category (->) where
-	type IfC (->) a b = a :~: b
+	type EqC (->) a b = a :~: b
 	type Obj (->) a   = Proxy a
 
+	{-# INLINE source #-}
 	source (f :: a -> b) = Proxy :: Proxy a
+	{-# INLINE target #-}
 	target (f :: a -> b) = Proxy :: Proxy b
 
+	{-# INLINE idC #-}
 	idC Proxy = \x -> x
 
 	{-# INLINE dotW #-}
 	dotW Refl = \g f -> \x -> g (f x)
 
-instance LargeCategory (->) where
+instance CatHaskell (->) where
 	{-# INLINE id #-}
 	id = \x -> x
 
@@ -105,10 +109,12 @@ instance LargeCategory (->) where
 
 
 instance Category (,) where
-	type IfC (,) a b = a :=: b
+	type EqC (,) a b = a :=: b
 	type Obj (,) a   = a
 
+	{-# INLINE source #-}
 	source (x,_) = x
+	{-# INLINE target #-}
 	target (_,y) = y
 
 	idC x = (x,x)

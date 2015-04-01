@@ -1,14 +1,14 @@
 {-# LANGUAGE
         NoImplicitPrelude,
-        TypeFamilies,
-        PolyKinds,
         GADTs,
-        MultiParamTypeClasses,
-        FlexibleInstances
-  #-}
+        PolyKinds,
+        TypeFamilies,
+        FlexibleInstances,
+        MultiParamTypeClasses
+    #-}
 
 {- |
-Module          : Abstract.Arrow
+Module          : Alt.Arrow
 Description     : Arrow Categories
 Copyright       : (c) Nicolas Godbout, 2015
                   (c) Ross Patterson, 2002
@@ -66,10 +66,11 @@ module Alt.Arrow (
         ArrowLoop(..),
         -- * Arrow Transformer
         ArrowTrans(..),
-        -- * Arrow Templates
+        -- * More General Arrow Templates
         Arrow0(..),
         Arrow1(..),
-        Arrow2(..)
+        Arrow2(..),
+        Arrow3(..)
     ) where
 
 -- alt-base modules
@@ -89,11 +90,9 @@ infixr 3 &&&
 infixr 2 +++
 infixr 2 |||
 
--- TODO: Arrows should really be defined over LARGE categories.
-
 {- | The basic Arrow class.
 -}
-class LargeCategory f => Arrow f where
+class CatHaskell f => Arrow f where
     arr         :: (a -> f () b) -> f a b
     const       :: a -> f () a
 
@@ -102,11 +101,6 @@ class LargeCategory f => Arrow f where
 class Arrow f => ArrowProd f where
     pull        :: ((a,b) -> f () c) -> f (a,b) c
     push        :: (f a b, f a c) -> f a (b,c)
-
--- These should be (in pseudo-Haskell)
---  pull        :: (a -> f b* c) -> f (a b*) c
---  push        :: a -> f b* (a b*)
-
 
 -- | Send the first component of the input through the argument
 --   arrow, and copy the rest unchanged to the output.
@@ -137,10 +131,6 @@ f &&& g = arr $ \x -> push (f . const x, g . const x)
 class Arrow f => ArrowSum f where
     copull      :: (Either a b -> f () c) -> f (Either a b) c
     copush      :: Either (f a b) (f a c) -> f a (Either b c)
-
--- These should be (in pseudo-Haskell)
---  copull      :: (a -> f b+ c) -> f (a + b+) c
---  copush      :: (f a b + f a c) -> f a (b + c)
 
 -- | Feed marked inputs through the argument arrow, passing the
 --   rest through unchanged to the output.
@@ -175,12 +165,16 @@ f ||| g = copull lambda
         lambda (Left x)  = f . const x
         lambda (Right y) = g . const y
 
-
+{- | Arrows allowing application of a first-class arrow to another input.
+-}
 class Arrow arr => ArrowApply arr where
     app :: arr (arr a b, a) b
 
+{- | The 'loop' operator expresses computations where an output value is fed
+back as input.
+-}
 class Arrow arr => ArrowLoop arr where
-    loop :: arr (e,a) (e,b) -> arr a b
+    loop :: arr (a,c) (b,c) -> arr a b
 
 {- | An Arrow Transformer constructs an arrow from an inner one.
 -}
@@ -194,36 +188,52 @@ class (Arrow arr, Arrow (f arr)) => ArrowTrans f arr where
 can bring enlightenment about theoretical category theory, having to
 do with initial and final objects.
 -}
-class (LargeCategory f) => Arrow0 t f where
-    pull0       :: (t -> b) -> f t b    -- const b
-    push0       :: t -> f a t
-    -- if t is a Product, then push0 == const One
-    -- if t is a Sum, then push0 == Zero, i.e. 'fail'
+class (CatHaskell f) => Arrow0 t f where
+    pull0       :: (() -> b) -> f () b    -- f One b
+    push0       :: () -> f z ()           -- f Zero One
+    -- there is something deep here!
 
 {- | Template of an Arrow involving a 1-ary type function. It forms the
 basis of 'fold' and 'unfold' functions.
 -}
-class (LargeCategory f) => Arrow1 t f where
+class (CatHaskell f) => Arrow1 t f where
     pull1       :: (t a -> b) -> f (t a) b
     push1       :: t (a -> b) -> f a (t b)
     -- if t == Id then pull1 == push1 ~ arr
 
-{- | Template of an Arrow involving a 2-ary type function. Inspecting its
-type yields enlightenment about products and coproducts in a category.
+{- | Template of an Arrow involving a 2-ary type function.
+
+Inspecting its type yields enlightenment about products and coproducts
+in a category. In pseudo-Haskell, there is an equivalence of /classes/
+
+> Arrow2 (,) f ~ ArrowProd f
+> Arrow2 Either f ~ ArrowSum f
+
+If @t@ is a Product, then the category @f@ is Monoidal.
+If @t@ is a CoProduct, equivalently a Sum, then the category @f@ is 
+CoMonoidal.
 -}
-class (LargeCategory f) => Arrow2 t f where
+class (CatHaskell f) => Arrow2 t f where
     pull2       :: (t a b -> c) -> f (t a b) c
     push2       :: t (a -> b) (a -> c) -> f a (t b c)
     -- if t is a Product, then this Category is Monoidal
     -- if t is a Sum, then this Category is CoMonoidal
 
--- COMMENT: since the transformer 't' is PolyKind, have /it/ transform
--- Arrows into Arrows.
+{- | Template for an arrow involving a 3-ary type function.
+-}
+class (CatHaskell f) => Arrow3 t f where
+    pull3       :: (t a b c -> d) -> f (t a b c) d
+    push3       :: t (a -> b) (a -> c) (a -> d) -> f a (t b c d)
+
+-- COMMENT: since we would like the transformer 't' to be PolyKind,
+-- have /it/ transform Arrows into Arrows.
 
 
 -----
 -- Instances
 -----
+
+----- Instances for (->) -----
 
 instance Arrow (->) where
     {-# INLINE arr #-}
@@ -248,15 +258,18 @@ instance ArrowSum (->) where
     copush (Right g) = \y -> Right (g y)
 
 instance ArrowApply (->) where
+    {-# INLINE app #-}
     app = \(f,a) -> f a
 
 instance ArrowLoop (->) where
-    loop f = \x -> let (e,y) = f (e,x) in y
+    {-# INLINE loop #-}
+    loop f = \x -> let (y,c) = f (x,c) in y
+
 
 
 instance Arrow0 t (->) where
     pull0 = id
-    push0 _ = \_ -> error "Abstract.Arrow.push0"
+    push0 () = \_ -> ()
 
 instance Applicative t => Arrow1 t (->) where
     pull1 = id
