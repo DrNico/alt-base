@@ -27,11 +27,11 @@ This module fully supports GHC's arrow notation. Import it instead of
 "Control.Arrow" and add the following pragma
 at the head of the modules importing this one.
 
-> {-# LANGUAGE Arrows, RebindableSyntax #-}
+> LANGUAGE Arrows, RebindableSyntax
 
 Note that this implies @NoImplicitPrelude@, so you may have to add
 
-> import Prelude (&#3C;/used symbols/&#3E;)
+> import Prelude (<symbols>)
 
 with the list of symbols that are used.
 
@@ -41,8 +41,8 @@ to be redefined to be compatible with this package.
 == Historical Note
 The original formulation of arrows is exposed in
 
-  * /Generalising Monads to Arrows/, John Hughes, /Science
-    of Computer Programming/ *37*, 67-111 (2000).
+  * /Generalising Monads to Arrows/, John Hughes,
+    /Science of Computer Programming/ *37*, 67-111 (2000).
   * /A New Notation for Arrows/, Ross Patterson, /in/ ICFP 2001,
     229-240, Firenze, Italy.
 
@@ -51,7 +51,7 @@ These papers and more information on arrows can be found at
 -}
 
 module Alt.Arrow (
-        -- * Simple Arrows
+        -- * Basic Arrows
         -- ** The root Arrow class
         Arrow(..),
         -- ** Arrow with state
@@ -93,11 +93,16 @@ infixr 3 &&&
 infixr 2 +++
 infixr 2 |||
 
-{- | The basic Arrow class.
+{- | 
 -}
-class CatHaskell f => Arrow f where
-    arr         :: (a -> f () b) -> f a b
+class Category f => Arrow f where
+    lambda      :: (a -> f () b) -> f a b
     const       :: a -> f () a
+
+{- | Lift a pure function into an arrow.
+-}
+arr :: Arrow f => (a -> b) -> f a b
+arr f = lambda $ \x -> const (f x)
 
 {- | The class of arrows over tuples. This allows an arrow to carry a state.
 -}
@@ -107,26 +112,30 @@ class Arrow f => ArrowProd f where
 
 -- | Send the first component of the input through the argument
 --   arrow, and copy the rest unchanged to the output.
-first :: ArrowProd a => a b c -> a (b,d) (c,d)
+first :: (ArrowProd a, CatHaskell a)
+      => a b c -> a (b,d) (c,d)
 {-# INLINE first #-}
 first f = pull $ \(x,y) -> push (f . const x, const y)
 
 -- | A mirror image of 'first'.
-second :: ArrowProd a => a b c -> a (d,b) (d,c)
+second :: (ArrowProd a, CatHaskell a)
+       => a b c -> a (d,b) (d,c)
 {-# INLINE second #-}
 second f = pull $ \(x,y) -> push (const x, f . const y)
 
 -- | Split the input between the two argument arrows and combine
 --   their output.  Note that this is in general not a functor.
-(***) :: ArrowProd a => a b c -> a b' c' -> a (b,b') (c,c')
+(***) :: (ArrowProd a, CatHaskell a)
+      => a b c -> a b' c' -> a (b,b') (c,c')
 {-# INLINE (***) #-}
 f *** g = pull $ \(x,y) -> push (f . const x, g . const y)
 
 -- | Fanout: send the input to both argument arrows and combine
 --   their output.
-(&&&) :: ArrowProd a => a b c -> a b c' -> a b (c,c')
+(&&&) :: (ArrowProd a, CatHaskell a)
+      => a b c -> a b c' -> a b (c,c')
 {-# INLINE (&&&) #-}
-f &&& g = arr $ \x -> push (f . const x, g . const x)
+f &&& g = lambda $ \x -> push (f . const x, g . const x)
 
 
 {- | The class of arrows with choice.
@@ -137,7 +146,8 @@ class Arrow f => ArrowSum f where
 
 -- | Feed marked inputs through the argument arrow, passing the
 --   rest through unchanged to the output.
-left :: ArrowSum a => a b c -> a (Either b d) (Either c d)
+left :: (ArrowSum a, CatHaskell a)
+     => a b c -> a (Either b d) (Either c d)
 {-# INLINE left #-}
 left f = copull lambda
     where
@@ -145,7 +155,8 @@ left f = copull lambda
         lambda (Right y) = copush (Right (const y))
 
 -- | A mirror image of 'left'.
-right :: ArrowSum a => a b c -> a (Either d b) (Either d c)
+right :: (ArrowSum a, CatHaskell a)
+      => a b c -> a (Either d b) (Either d c)
 {-# INLINE right #-}
 right f = copull lambda
     where
@@ -153,7 +164,8 @@ right f = copull lambda
         lambda (Right y) = copush (Right (f . const y))
 
 -- | Split the input between two argument arrows.
-(+++) :: ArrowSum a => a b c -> a b' c' -> a (Either b b') (Either c c')
+(+++) :: (ArrowSum a, CatHaskell a)
+      => a b c -> a b' c' -> a (Either b b') (Either c c')
 {-# INLINE (+++) #-}
 f +++ g = copull lambda
     where
@@ -161,7 +173,8 @@ f +++ g = copull lambda
         lambda (Right y) = copush (Right (g . const y))
 
 -- | Fanin: feed the input to one of the argument arrows.
-(|||) :: ArrowSum a => a b d -> a c d -> a (Either b c) d
+(|||) :: (ArrowSum a, CatHaskell a)
+      => a b d -> a c d -> a (Either b c) d
 {-# INLINE (|||) #-}
 f ||| g = copull lambda
     where
@@ -188,18 +201,19 @@ class (Arrow arr, Arrow (f arr)) => ArrowTrans f arr where
 
 -- t is a nullary transformer, hence Set
 {- | Template of an Arrow involving a 0-ary type function. Inspecting its type
-can bring enlightenment about theoretical category theory, having to
-do with initial and final objects.
+can bring enlightenment about theoretical category theory: a terminal
+object is a simple type of kind '*' and an initial
+object @a@ is /any/ type.
 -}
-class (CatHaskell f) => Arrow0 t f where
-    pull0       :: (() -> b) -> f () b    -- f One b
-    push0       :: () -> f z ()           -- f Zero One
+class (Category f) => Arrow0 t f where
+    pull0       :: (t -> b) -> f t b    -- f One b
+    push0       :: t -> f a t           -- f Zero One
     -- there is something deep here!
 
 {- | Template of an Arrow involving a 1-ary type function. It forms the
 basis of 'fold' and 'unfold' functions.
 -}
-class (CatHaskell f) => Arrow1 t f where
+class (Category f) => Arrow1 t f where
     pull1       :: (t a -> b) -> f (t a) b
     push1       :: t (a -> b) -> f a (t b)
     -- if t == Id then pull1 == push1 ~ arr
@@ -216,7 +230,7 @@ If @t@ is a Product, then the category @f@ is Monoidal.
 If @t@ is a CoProduct, equivalently a Sum, then the category @f@ is 
 CoMonoidal.
 -}
-class (CatHaskell f) => Arrow2 t f where
+class (Category f) => Arrow2 t f where
     pull2       :: (t a b -> c) -> f (t a b) c
     push2       :: t (a -> b) (a -> c) -> f a (t b c)
     -- if t is a Product, then this Category is Monoidal
@@ -224,7 +238,7 @@ class (CatHaskell f) => Arrow2 t f where
 
 {- | Template for an arrow involving a 3-ary type function.
 -}
-class (CatHaskell f) => Arrow3 t f where
+class (Category f) => Arrow3 t f where
     pull3       :: (t a b c -> d) -> f (t a b c) d
     push3       :: t (a -> b) (a -> c) (a -> d) -> f a (t b c d)
 
@@ -239,8 +253,8 @@ class (CatHaskell f) => Arrow3 t f where
 ----- Instances for (->) -----
 
 instance Arrow (->) where
-    {-# INLINE arr #-}
-    arr f = \x -> f x ()
+    {-# INLINE lambda #-}
+    lambda f = \x -> f x ()
 
     {-# INLINE const #-}
     const x = \_ -> x
@@ -272,7 +286,7 @@ instance ArrowLoop (->) where
 
 instance Arrow0 t (->) where
     pull0 = id
-    push0 () = \_ -> ()
+    push0 t = \_ -> t
 
 instance Applicative t => Arrow1 t (->) where
     pull1 = id

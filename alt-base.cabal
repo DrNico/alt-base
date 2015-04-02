@@ -27,7 +27,8 @@ cabal-version:       >=1.10
 library
   exposed-modules:
     Alt.Category, Alt.Arrow, Alt.Prelude, 
-    Alt.Object.Identity, Alt.Object.Reflection
+    Alt.Object.Identity, Alt.Object.Reflection,
+    Alt.Arrow.Identity
   -- other-modules:       
   other-extensions:    NoImplicitPrelude, GADTs, PolyKinds, RankNTypes, TypeFamilies, TypeOperators, MultiParamTypeClasses
   build-depends:       base >=4.7 && <4.8

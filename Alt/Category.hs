@@ -68,10 +68,10 @@ class Category hom where
 			-> hom b' c -> hom a b
 			-> hom a c
 
-{- | Category of Haskell function-like morphisms.
+{- | Category of function-like morphisms in Haskell.
 
 Instances of this category have the property that Haskell can determine
-composability at compile-time using the type-system.
+composability during compilation using the type system.
 
 Instances satisfy the laws:
 

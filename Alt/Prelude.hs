@@ -4,7 +4,7 @@
 
 {- |
 Module          : Alt.Prelude
-Description     : Arrow Categories
+Description     : Small Prelude to use with other modules.
 Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
@@ -33,16 +33,16 @@ Use cases:
 
   * As a section
 	
-    > map (($) f) xs
+    	> map (($) f) xs
 	
 	where this expression produces much cleaner code than both the Prelude
 	version of @($)@ and the simpler-looking @map f xs@.
-
+	
   * As a replacement for parentheses
-
-    > f $ g y $ h z == f (g y (h z))
-
-    where the @($)@ inlining strategy produces exactly the same expression.
+	
+    	> f $ g y $ h z == f (g y (h z))
+	
+    where the inlining strategy for '$' produces exactly the same expression.
 
 -}
 ($) :: (a -> b) -> a -> b
