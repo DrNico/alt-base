@@ -48,3 +48,10 @@ Use cases:
 ($) :: (a -> b) -> a -> b
 {-# INLINE ($) #-}
 ($) f = \x -> f x
+
+{-
+instance ArrowError String (->) where
+	raise = Prelude.error
+	handle = Prelude.undefined
+	tryInUnless = Prelude.undefined
+-}

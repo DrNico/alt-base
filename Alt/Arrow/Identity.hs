@@ -13,9 +13,7 @@ Description:        Arrow encapsulating a pure Haskell function
 Copyright:          (c) 2015 Nicolas Godbout
 Licence:            BSD-3
 Stability:          experimental
-
 -}
-
 module Alt.Arrow.Identity (
         IdentityArrow(..)
     ) where
@@ -27,7 +25,8 @@ import Alt.Category
 -- alt-base Prelude
 import Alt.Prelude
 
-
+{- | Identity arrow, merely encapsulating a pure Haskell function.
+-}
 newtype IdentityArrow f a b = IdentityArrow {
     identityArrow :: f a b
 }

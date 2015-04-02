@@ -1,7 +1,9 @@
 {-# LANGUAGE
 	NoImplicitPrelude,
-	GADTs, PolyKinds, TypeFamilies
-  #-}
+	GADTs,
+	PolyKinds,
+	TypeFamilies
+  	#-}
 
 {-|
 Module          : Object.TupleN

@@ -26,11 +26,22 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-    Alt.Category, Alt.Arrow, Alt.Prelude, 
+    Alt.Abstract.Category, Alt.Abstract.Arrow,
+    Alt.Arrow.Identity, Alt.Arrow.Kleisli, Alt.Arrow.Legacy,
     Alt.Object.Identity, Alt.Object.Reflection,
-    Alt.Arrow.Identity
+    Alt.Prelude
   -- other-modules:       
-  other-extensions:    NoImplicitPrelude, GADTs, PolyKinds, RankNTypes, TypeFamilies, TypeOperators, MultiParamTypeClasses
+  other-extensions:
+    NoImplicitPrelude,
+    GADTs,
+    PolyKinds,
+    TypeFamilies,
+    TypeOperators,
+    ConstraintKinds,
+    FlexibleContexts,
+    FlexibleInstances,
+    ScopedTypeVariables,
+    MultiParamTypeClasses
   build-depends:       base >=4.7 && <4.8
   -- hs-source-dirs:      
   default-language:    Haskell2010
@@ -38,4 +49,4 @@ library
 source-repository this
   type: git
   location: git://github.com/DrNico/alt-base.git
-  tag: alt-base-v0.1.0
+  tag: alt-base-0.1.0

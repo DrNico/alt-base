@@ -8,7 +8,7 @@
   #-}
 
 {-|
-Module          : Alt.Category
+Module          : Alt.Abstract.Category
 Description     : Class of Categories
 Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
@@ -17,11 +17,11 @@ Maintainer      : nicolas.godbout@gmail.com
 This module is the foundation of the alt-base package and is imported by
 most other modules.
 -}
-module Alt.Category (
+module Alt.Abstract.Category (
 		-- * Category class
 		Category(..),
 		-- * Haskell category
-		CatHaskell(..)
+		Haskell(..)
 	) where
 
 -- alt-base modules
@@ -40,7 +40,8 @@ import Data.Typeable
 --   cute, but we really need to distinguish between small and large categories
 ----
 
-{- | Class of Categories.
+{- | General class of Categories, with two associated types: a type of Objects
+and an Equivalence of Objects.
 
 Instances must satisfy the following laws:
 
@@ -63,27 +64,33 @@ class Category hom where
 	-- | Build an identity morphism over the given object.
 	idC		:: Obj hom a -> hom a a
 
-	-- | Composition with a witness.
+	-- | Composition with a witness obtained from the Equivalence class.
 	dotW 	:: EqC hom b b'
 			-> hom b' c -> hom a b
 			-> hom a c
+
+
+-- ; Composition of morphisms within an ambiant category that can
+-- handle errors in case of equivalence violation. Typical use is for
+-- dynamic type-checking in interpreters, domain-specific languages, etc.
+-- dot :: (ArrowError CatError amb, Equivalence (EqC hom))
+--     => amb (hom b' c, hom a b) (hom a c)
+-- ## break circular reference from ErrorArrow
 
 {- | Category of function-like morphisms in Haskell.
 
 Instances of this category have the property that Haskell can determine
 composability during compilation using the type system.
 
-Instances satisfy the laws:
-
-> EqC hom a b ~ (a :~: b)
-> Obj hom a   ~ Proxy a
-
+/Note/: This definition is identical but distinct from the standard "Control.Category"
+module, mostly to avoid utter confusion with the 'Category' class of this module, in some
+part to impose different simplification rules.
+Contact maintainers if you need this class to unify with the standard.
 -}
-class Category hom => CatHaskell hom where
-	id  :: hom a a
-	(.) :: hom b c -> hom a b
-	    -> hom a c
-
+class Haskell hom where
+	id 		:: hom a a
+	(.)		:: hom b c -> hom a b
+			-> hom a c
 
 instance Category (->) where
 	type EqC (->) a b = a :~: b
@@ -100,7 +107,7 @@ instance Category (->) where
 	{-# INLINE dotW #-}
 	dotW Refl = \g f -> \x -> g (f x)
 
-instance CatHaskell (->) where
+instance Haskell (->) where
 	{-# INLINE id #-}
 	id = \x -> x
 
