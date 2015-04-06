@@ -20,12 +20,13 @@ most other modules.
 module Alt.Abstract.Category (
 		-- * Category class
 		Category(..),
+		(>>>), (<<<),
 		-- * Haskell category
 		Haskell(..)
 	) where
 
 -- alt-base modules
-import Alt.Object.Reflection
+import Alt.Abstract.Equivalence
 import Alt.Object.Identity
 
 -- base modules
@@ -34,6 +35,10 @@ import Data.Eq (Eq(..))
 import Data.Maybe (Maybe(..))
 import Data.Typeable
 
+
+infixr 9 .
+infixr 1 <<<
+infixr 1 >>>
 
 -----
 -- Comment:
@@ -79,8 +84,9 @@ class Category hom where
 
 {- | Category of function-like morphisms in Haskell.
 
-Instances of this category have the property that Haskell can determine
-composability during compilation using the type system.
+Instances of this category have the property that equality of type is
+/sufficient/ to ensure composability. The Haskell type system can always
+correctly determine the correct composition.
 
 /Note/: This definition is identical but distinct from the standard "Control.Category"
 module, mostly to avoid utter confusion with the 'Category' class of this module, in some
@@ -91,6 +97,20 @@ class Haskell hom where
 	id 		:: hom a a
 	(.)		:: hom b c -> hom a b
 			-> hom a c
+
+(<<<) :: (Haskell hom)
+      => hom b c -> hom a b
+      -> hom a c
+{-# INLINE (<<<) #-}
+(<<<) = (.)
+
+(>>>) :: (Haskell hom)
+      => hom a b -> hom b c
+      -> hom a c
+{-# INLINABLE (>>>) #-}
+f >>> g = g . f
+
+
 
 instance Category (->) where
 	type EqC (->) a b = a :~: b

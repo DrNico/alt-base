@@ -64,7 +64,11 @@ the presence of a type parameter, which makes this a pointed arrow.
 class (Category f) => Arrow0 t f where
     pull0       :: (t -> f () b) -> f t b    -- f One b
     push0       :: t -> f a t           -- f Zero One
-    -- there is something deep here!
+
+-- CoArrow
+--    copull0 :: f t b -> (f t () -> b)
+--    copush0 :: f a t -> t
+-- ...or something like that
 
 {- | Template of an Arrow involving a 1-ary type function. It forms the
 basis of 'fold' and 'unfold' functions.

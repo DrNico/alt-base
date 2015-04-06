@@ -17,11 +17,12 @@ not compose well with this package's combinators.
 module Alt.Prelude (
 		($),
 		-- re-exports
+		Prelude.Num(..),
 		Prelude.undefined,
 		Prelude.error
 	) where
 
-import qualified Prelude (undefined, error)
+import qualified Prelude (Num(..),undefined, error)
 
 infixr 0 $
 
