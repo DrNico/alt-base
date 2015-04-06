@@ -95,9 +95,9 @@ infixr 2 +++
 infixr 2 |||
 
 {- | Arrow class, constituted from an identity lambda-builder and
-a tuple as co-product.
+a tuple as product.
 -}
-type Arrow f = (Arrow_ f, Arrow2 (,) f)
+type Arrow f = (Haskell f, Arrow_ f, Arrow2 (,) f)
 
 {- | Lift a pure function into an arrow.
 -}
@@ -106,27 +106,27 @@ arr f = lambda $ \x -> const (f x)
 
 -- | Send the first component of the input through the argument
 --   arrow, and copy the rest unchanged to the output.
-first :: (Arrow a, Haskell a)
+first :: (Arrow a)
       => a b c -> a (b,d) (c,d)
 {-# INLINE first #-}
 first f = pull2 $ \(x,y) -> push2 (f . const x, const y)
 
 -- | A mirror image of 'first'.
-second :: (Arrow a, Haskell a)
+second :: (Arrow a)
        => a b c -> a (d,b) (d,c)
 {-# INLINE second #-}
 second f = pull2 $ \(x,y) -> push2 (const x, f . const y)
 
 -- | Split the input between the two argument arrows and combine
 --   their output.  Note that this is in general not a functor.
-(***) :: (Arrow a, Haskell a)
+(***) :: (Arrow a)
       => a b c -> a b' c' -> a (b,b') (c,c')
 {-# INLINE (***) #-}
 f *** g = pull2 $ \(x,y) -> push2 (f . const x, g . const y)
 
 -- | Fanout: send the input to both argument arrows and combine
 --   their output.
-(&&&) :: (Arrow a, Haskell a)
+(&&&) :: (Arrow a)
       => a b c -> a b c' -> a b (c,c')
 {-# INLINE (&&&) #-}
 f &&& g = lambda $ \x -> push2 (f . const x, g . const x)
@@ -146,11 +146,11 @@ type ArrowApply f   = (Arrow1 Id f, Arrow2 (,) f, Arrow2 f f)
 --     copull      :: (Either a b -> f () c) -> f (Either a b) c
 --     copush      :: Either (f a b) (f a c) -> f a (Either b c)
 
-type ArrowChoice f = (Arrow_ f, Arrow2 Either f)
+type ArrowChoice f = (Haskell f, Arrow_ f, Arrow2 Either f)
 
 -- | Feed marked inputs through the argument arrow, passing the
 --   rest through unchanged to the output.
-left :: (ArrowChoice a, Haskell a)
+left :: (ArrowChoice a)
      => a b c -> a (Either b d) (Either c d)
 {-# INLINE left #-}
 left f = pull2 lambda
@@ -159,7 +159,7 @@ left f = pull2 lambda
         lambda (Right y) = push2 (Right (const y))
 
 -- | A mirror image of 'left'.
-right :: (ArrowChoice a, Haskell a)
+right :: (ArrowChoice a)
       => a b c -> a (Either d b) (Either d c)
 {-# INLINE right #-}
 right f = pull2 lambda
@@ -168,7 +168,7 @@ right f = pull2 lambda
         lambda (Right y) = push2 (Right (f . const y))
 
 -- | Split the input between two argument arrows.
-(+++) :: (ArrowChoice a, Haskell a)
+(+++) :: (ArrowChoice a)
       => a b c -> a b' c' -> a (Either b b') (Either c c')
 {-# INLINE (+++) #-}
 f +++ g = pull2 lambda
@@ -177,7 +177,7 @@ f +++ g = pull2 lambda
         lambda (Right y) = push2 (Right (g . const y))
 
 -- | Fanin: feed the input to one of the argument arrows.
-(|||) :: (ArrowChoice a, Haskell a)
+(|||) :: (ArrowChoice a)
       => a b d -> a c d -> a (Either b c) d
 {-# INLINE (|||) #-}
 f ||| g = pull2 lambda

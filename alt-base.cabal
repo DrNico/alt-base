@@ -26,9 +26,11 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-    Alt.Abstract.Category, Alt.Abstract.Arrow,
+    Alt.Abstract.Category, Alt.Abstract.Arrow, Alt.Abstract.Equivalence,
     Alt.Arrow.Identity, Alt.Arrow.Kleisli, Alt.Arrow.Legacy,
-    Alt.Object.Identity, Alt.Object.Reflection,
+    Alt.Category.Set,
+    Alt.Object.Identity,
+    Alt.Transform.Swap,
     Alt.Prelude
   -- other-modules:       
   other-extensions:
@@ -42,7 +44,7 @@ library
     FlexibleInstances,
     StandaloneDeriving,
     ScopedTypeVariables,
-    MultiParamTypeClasses,n
+    MultiParamTypeClasses,
     GeneralizedNewtypeDeriving
   build-depends:       base >=4.7 && <4.8
   -- hs-source-dirs:      

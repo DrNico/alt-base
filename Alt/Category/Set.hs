@@ -7,11 +7,27 @@
 		ScopedTypeVariables
 	#-}
 
-module Alt.Category.Set where
+{- |
+Module          : Alt.Category.Set
+Description     : Category __Set__
+Copyright       : (c) Nicolas Godbout, 2015
+License         : BSD-3
+Maintainer      : nicolas.godbout@gmail.com
+
+This module provides an implementation of the category __Set__ having small sets
+as objects and functions (defined as relations) as arrows.
+-}
+module Alt.Category.Set (
+		CatSet,
+		ObjSet,
+		EqSet,
+		fromList
+	) where
 
 -- alt-base modules
 import Alt.Abstract.Category
 import Alt.Abstract.Equivalence
+import Alt.Transform.Swap
 
 -- base modules
 import Control.Monad (Functor(..), Monad(..))
@@ -47,7 +63,7 @@ data ObjSet a where
 -}
 data EqSet a b where
 	EqSet		:: [Int]
-				-> EqSet (ObjSet a) (ObjSet b)
+				-> EqSet a b
 
 {- | Build an arrow of the category __Set__ from a list of source-target
 tuples.
@@ -67,24 +83,21 @@ fromList lst =
 -- instance Equivalence EqSet where
 witness' :: (Eq a, Eq b, Typeable a, Typeable b)
 		 => ObjSet a -> ObjSet b
-	     -> Maybe (EqSet (ObjSet a) (ObjSet b))
+	     -> Maybe (EqSet a b)
 witness' ((ObjSet as) :: ObjSet a) ((ObjSet bs) :: ObjSet b) = do
 		refl <- eqT :: Maybe (a :~: b)
 		quiver refl as bs
 		where
-		quiver :: (a :~: b) -> [a] -> [b] -> Maybe (EqSet (ObjSet a) (ObjSet b))
+		quiver :: (a :~: b) -> [a] -> [b] -> Maybe (EqSet a b)
 		quiver Refl as bs = do
 			perm <- swap $ map (\a -> elemIndex a bs) as
 			return $ EqSet perm
 		-- ## check that this is a bijection
 
--- ## move to Alt.Transform.Swap
--- instance Swap [] Maybe
-swap :: [Maybe a] -> Maybe [a]
-swap []             = Just []
-swap (Nothing : xs) = Nothing
-swap (Just x : xs)  = fmap ((:) x) (swap xs)
+instance Equivalence EqSet where
+	type EqO EqSet a = ObjSet a
 
+	witness = witness'
 
 instance Category CatSet where
 	type EqC CatSet a b = EqSet (ObjSet a) (ObjSet b)

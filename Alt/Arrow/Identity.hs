@@ -19,13 +19,13 @@ module Alt.Arrow.Identity (
     ) where
 
 -- alt-base modules
-import Alt.Arrow
-import Alt.Category
+import Alt.Abstract.Arrow
+import Alt.Abstract.Category
 
 -- alt-base Prelude
 import Alt.Prelude
 
-{- | Identity arrow, merely encapsulating a pure Haskell function.
+{- | Identity arrow, merely encapsulating another arrow.
 -}
 newtype IdentityArrow f a b = IdentityArrow {
     identityArrow :: f a b
@@ -44,13 +44,13 @@ instance Category f => Category (IdentityArrow f) where
         dot (IdentityArrow g) (IdentityArrow f) =
             IdentityArrow (dotW refl g f)
 
-deriving instance CatHaskell f => CatHaskell (IdentityArrow f)
-deriving instance Arrow f => Arrow (IdentityArrow f)
-deriving instance ArrowProd f => ArrowProd (IdentityArrow f)
-deriving instance ArrowSum f => ArrowSum (IdentityArrow f)
--- deriving instance ArrowApply f => ArrowApply (IdentityArrow f)
-deriving instance ArrowLoop f => ArrowLoop (IdentityArrow f)
+deriving instance Haskell f     => Haskell (IdentityArrow f)
+deriving instance Arrow_ f      => Arrow_ (IdentityArrow f)
+deriving instance Arrow0 t f    => Arrow0 t (IdentityArrow f)
+deriving instance Arrow1 t f    => Arrow1 t (IdentityArrow f)
+-- deriving instance Arrow2 t f    => Arrow2 t (IdentityArrow f)
+-- deriving instance Arrow3 t f    => Arrow3 t (IdentityArrow f)
 
-instance Arrow f => ArrowTrans IdentityArrow f where
-    liftA = IdentityArrow
+-- instance Arrow f => ArrowTrans IdentityArrow f where
+--     liftA = IdentityArrow
 

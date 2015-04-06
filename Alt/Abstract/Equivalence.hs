@@ -1,50 +1,59 @@
 {-# LANGUAGE
-		NoImplicitPrelude,
-		GADTs,
-		TypeOperators,
-		ScopedTypeVariables
-	#-}
+        NoImplicitPrelude,
+        GADTs,
+        PolyKinds,
+        TypeFamilies,
+        TypeOperators,
+        ScopedTypeVariables
+    #-}
 
 module Alt.Abstract.Equivalence (
-		Equivalence(..),
-		(:~:)(..), -- re-export
-		(:=:)(..)
-	) where
+        Equivalence(..),
+        (:~:)(..), -- re-export
+        (:=:)(..)
+    ) where
 
 import Data.Bool (Bool(..))
 import Data.Eq (Eq(..))
 import Data.Maybe (Maybe(..))
 import Data.Typeable (Typeable, (:~:)(..), eqT)
 
+infixr 4 :=:
+
 {- | Equivalence class.
 
 Instances must satisfy the laws:
 
-== reflectivity
-  prop> witness x y == fmap reflect (witness y x)
+  1. reflectivity
 
-== involution of reflectivity
-  prop> reflect . reflect == id
+     prop> witness x y == fmap reflect (witness y x)
 
-== transitivity
-  prop> witness x y >> witness y z >> return () == witness x z >> return ()
+  2. involution of reflectivity
+
+     prop> reflect . reflect == id
+
+  3. transitivity
+
+     prop> witness x y >> witness y z >> return () == witness x z >> return ()
 -}
 class Equivalence eq where
-    witness :: (Typeable a, Typeable b, Eq a, Eq b)
-            => a -> b -> Maybe (eq a b)
+    type EqO eq a :: *
+    type EqO eq a = a
+
+    witness :: (a' ~ EqO eq a, b' ~ EqO eq b, Typeable a, Typeable b, Eq a, Eq b)
+            => a' -> b' -> Maybe (eq a b)
 
     reflect :: eq a b -> eq b a
 
 
 {- | Type equivalence. Objects @a@ and @b@ are deemed equivalent if they
 satisfy the constraint @a ~ b@.
-
 'Proxy' can be fed as arguments to 'witness'.
 -}
 instance Equivalence (:~:) where
-	witness (x :: a) (y :: b) = eqT
+    witness (x :: a) (y :: b) = eqT
 
-	reflect Refl = Refl
+    reflect Refl = Refl
 
 {- | Term equality.
 
@@ -64,7 +73,7 @@ eqTerm (x :: a) (y :: b) =
 
 
 instance Equivalence (:=:) where
-	witness = eqTerm
+    witness = eqTerm
 
-	reflect (Equal a) = Equal a
+    reflect (Equal a) = Equal a
 
