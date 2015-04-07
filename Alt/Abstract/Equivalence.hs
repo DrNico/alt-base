@@ -13,10 +13,13 @@ module Alt.Abstract.Equivalence (
         (:=:)(..)
     ) where
 
+import Alt.Object.Identity
+
+-- base modules
 import Data.Bool (Bool(..))
 import Data.Eq (Eq(..))
 import Data.Maybe (Maybe(..))
-import Data.Typeable (Typeable, (:~:)(..), eqT)
+import Data.Typeable (Typeable, Proxy(..), (:~:)(..), eqT)
 
 infixr 4 :=:
 
@@ -37,10 +40,10 @@ Instances must satisfy the laws:
      prop> witness x y >> witness y z >> return () == witness x z >> return ()
 -}
 class Equivalence eq where
-    type EqO eq a :: *
-    type EqO eq a = a
+    type ObjEq eq a :: *
+    type ObjEq eq a = a
 
-    witness :: (a' ~ EqO eq a, b' ~ EqO eq b, Typeable a, Typeable b, Eq a, Eq b)
+    witness :: (a' ~ ObjEq eq a, b' ~ ObjEq eq b, Typeable a, Typeable b)
             => a' -> b' -> Maybe (eq a b)
 
     reflect :: eq a b -> eq b a
@@ -51,7 +54,9 @@ satisfy the constraint @a ~ b@.
 'Proxy' can be fed as arguments to 'witness'.
 -}
 instance Equivalence (:~:) where
-    witness (x :: a) (y :: b) = eqT
+    type ObjEq (:~:) a = Proxy a
+
+    witness (x :: Proxy a) (y :: Proxy b) = eqT
 
     reflect Refl = Refl
 
@@ -61,19 +66,19 @@ Term equality is inhabited if both the types and the values of given arguments
 are equal.
 -}
 data a :=: b where
-    Equal   :: a -> a :=: a
-
-eqTerm :: (Typeable a, Typeable b, Eq a) => a -> b -> Maybe (a :=: b)
-eqTerm (x :: a) (y :: b) =
-    case eqT :: Maybe (a :~: b) of
-        Just Refl ->
-            case x == y of
-                True -> Just (Equal x)
-                False -> Nothing
-
+    Equal   :: (Eq a)
+            => a
+            -> a :=: a
 
 instance Equivalence (:=:) where
-    witness = eqTerm
+    type ObjEq (:=:) a = Id a
+
+    witness (Id (x :: a)) (Id (y :: b)) =
+        case eqT :: Maybe (a :~: b) of
+            Just Refl ->
+                case x == y of
+                    True -> Just (Equal x)
+                    False -> Nothing
 
     reflect (Equal a) = Equal a
 

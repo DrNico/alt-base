@@ -80,11 +80,10 @@ fromList lst =
 -- Instances
 -----
 
--- instance Equivalence EqSet where
-witness' :: (Eq a, Eq b, Typeable a, Typeable b)
-		 => ObjSet a -> ObjSet b
-	     -> Maybe (EqSet a b)
-witness' ((ObjSet as) :: ObjSet a) ((ObjSet bs) :: ObjSet b) = do
+instance Equivalence EqSet where
+	type ObjEq EqSet a = ObjSet a
+
+	witness ((ObjSet as) :: ObjSet a) ((ObjSet bs) :: ObjSet b) = do
 		refl <- eqT :: Maybe (a :~: b)
 		quiver refl as bs
 		where
@@ -93,11 +92,6 @@ witness' ((ObjSet as) :: ObjSet a) ((ObjSet bs) :: ObjSet b) = do
 			perm <- swap $ map (\a -> elemIndex a bs) as
 			return $ EqSet perm
 		-- ## check that this is a bijection
-
-instance Equivalence EqSet where
-	type EqO EqSet a = ObjSet a
-
-	witness = witness'
 
 instance Category CatSet where
 	type EqC CatSet a b = EqSet (ObjSet a) (ObjSet b)
