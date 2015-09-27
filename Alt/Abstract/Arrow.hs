@@ -19,16 +19,14 @@ Copyright       : (c) Nicolas Godbout, 2015
 License         : BSD-3
 Maintainer      : nicolas.godbout@gmail.com
 
-= Arrow
-
+= General Arrow Templates
+        
+The following classes form a family of arrows parametrized by a /n/-ary
+type function. Remarkably, these subsume all operations of the original
+@arrows@ package and are no longer restricted to Haskell categories.
+These definitions also lift restrictions on arrow transformers.
 -}
 module Alt.Abstract.Arrow (
-        {- * General Arrow Templates
-        The following classes form a family of arrows parametrized by a /n/-ary
-        type function. Remarkably, these subsume all operations of the original
-        @arrows@ package and are no longer restricted to Haskell categories.
-        These definitions also lift restrictions on arrow transformers.
-        -}
         Arrow_(..),
         Arrow0(..),
         Arrow1(..),
@@ -93,14 +91,17 @@ CoMonoidal.
 class (Category f) => Arrow2 t f where
     pull2       :: (t a b -> f () c) -> f (t a b) c
     push2       :: t (f a b) (f a c) -> f a (t b c)
-    -- if t is a Product, then this Category is Monoidal
-    -- if t is a Sum, then this Category is CoMonoidal
 
 {- | Template for an arrow involving a 3-ary type function.
 -}
 class (Category f) => Arrow3 t f where
     pull3       :: (t a b c -> f () d) -> f (t a b c) d
-    push3       :: t (a -> b) (a -> c) (a -> d) -> f a (t b c d)
+    push3       :: t (f a b) (f a c) (f a d) -> f a (t b c d)
+
+-- Hom(A x B,C) ≅ Hom(A,Hom(B,C))
+-- pullN  :: (t a b* -> f b* c) -> f (t a b*) c
+-- pushN  :: t (f a b')* -> f a (t b*)
+
 
 -- COMMENT: since we would like the transformer 't' to be PolyKind,
 -- have /it/ transform Arrows into Arrows.

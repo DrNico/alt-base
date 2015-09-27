@@ -1,10 +1,10 @@
 {-# LANGUAGE
-		NoImplicitPrelude,
-		GADTs,
-		PolyKinds,
-		TypeFamilies,
-		TypeOperators,
-		ScopedTypeVariables
+        NoImplicitPrelude,
+        GADTs,
+        PolyKinds,
+        TypeFamilies,
+        TypeOperators,
+        ScopedTypeVariables
   #-}
 
 {-|
@@ -18,12 +18,12 @@ This module is the foundation of the alt-base package and is imported by
 most other modules.
 -}
 module Alt.Abstract.Category (
-		-- * Category class
-		Category(..),
-		(>>>), (<<<),
-		-- * Haskell category
-		Haskell(..)
-	) where
+        -- * Category class
+        Category(..),
+        (>>>), (<<<),
+        -- * Haskell category
+        Haskell(..)
+    ) where
 
 -- alt-base modules
 import Alt.Abstract.Equivalence
@@ -57,22 +57,22 @@ prop> g . f == bottom "if and only if" idS g `idEq` idT f
 
 -}
 class Category hom where
-	type EqC hom a b :: *
-	type Obj hom a   :: *
+    type EqC hom a b :: *
+    type Obj hom a   :: *
 
-	-- | Get the source of the morphism.
-	source 	:: hom a b -> Obj hom a
+    -- | Get the source of the morphism.
+    source  :: hom a b -> Obj hom a
 
-	-- | Get the target of the morphism.
-	target  :: hom a b -> Obj hom b
+    -- | Get the target of the morphism.
+    target  :: hom a b -> Obj hom b
 
-	-- | Build an identity morphism over the given object.
-	idC		:: Obj hom a -> hom a a
+    -- | Build an identity morphism over the given object.
+    idC     :: Obj hom a -> hom a a
 
-	-- | Composition with a witness obtained from the Equivalence class.
-	dotW 	:: EqC hom b b'
-			-> hom b' c -> hom a b
-			-> hom a c
+    -- | Composition with a witness obtained from the Equivalence class.
+    dotW    :: EqC hom b b'
+            -> hom b' c -> hom a b
+            -> hom a c
 
 
 -- ; Composition of morphisms within an ambiant category that can
@@ -94,9 +94,9 @@ part to impose different simplification rules.
 Contact maintainers if you need this class to unify with the standard.
 -}
 class Haskell hom where
-	id 		:: hom a a
-	(.)		:: hom b c -> hom a b
-			-> hom a c
+    id      :: hom a a
+    (.)     :: hom b c -> hom a b
+            -> hom a c
 
 (<<<) :: (Haskell hom)
       => hom b c -> hom a b
@@ -113,38 +113,38 @@ f >>> g = g . f
 
 
 instance Category (->) where
-	type EqC (->) a b = a :~: b
-	type Obj (->) a   = Proxy a
+    type EqC (->) a b = a :~: b
+    type Obj (->) a   = Proxy a
 
-	{-# INLINE source #-}
-	source (f :: a -> b) = Proxy :: Proxy a
-	{-# INLINE target #-}
-	target (f :: a -> b) = Proxy :: Proxy b
+    {-# INLINE source #-}
+    source (f :: a -> b) = Proxy :: Proxy a
+    {-# INLINE target #-}
+    target (f :: a -> b) = Proxy :: Proxy b
 
-	{-# INLINE idC #-}
-	idC Proxy = \x -> x
+    {-# INLINE idC #-}
+    idC Proxy = \x -> x
 
-	{-# INLINE dotW #-}
-	dotW Refl = \g f -> \x -> g (f x)
+    {-# INLINE dotW #-}
+    dotW Refl = \g f -> \x -> g (f x)
 
 instance Haskell (->) where
-	{-# INLINE id #-}
-	id = \x -> x
+    {-# INLINE id #-}
+    id = \x -> x
 
-	{-# INLINE (.) #-}
-	g . f = \x -> g (f x)
+    {-# INLINE (.) #-}
+    g . f = \x -> g (f x)
 
 
 instance Category (,) where
-	type EqC (,) a b = a :=: b
-	type Obj (,) a   = a
+    type EqC (,) a b = a :=: b
+    type Obj (,) a   = a
 
-	{-# INLINE source #-}
-	source (x,_) = x
-	{-# INLINE target #-}
-	target (_,y) = y
+    {-# INLINE source #-}
+    source (x,_) = x
+    {-# INLINE target #-}
+    target (_,y) = y
 
-	idC x = (x,x)
+    idC x = (x,x)
 
-	{-# INLINE dotW #-}
-	dotW (Equal _) = \(_,y) (x,_) -> (x,y)
+    {-# INLINE dotW #-}
+    dotW (Equal _) = \(_,y) (x,_) -> (x,y)

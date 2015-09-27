@@ -1,12 +1,12 @@
 {-# LANGUAGE
-		NoImplicitPrelude,
-		GADTs,
-		StandaloneDeriving
+        NoImplicitPrelude,
+        GADTs,
+        StandaloneDeriving
   #-}
 
 module Alt.Object.Identity (
-		Id(..)
-	) where
+        Id(..)
+    ) where
 
 
 import Alt.Prelude (Eq, Show, Typeable)
@@ -15,6 +15,6 @@ import Alt.Prelude (Eq, Show, Typeable)
 be an instance of 'Typeable' and 'Eq'.
 -}
 data Id a where
-	Id 		:: (Typeable a, Eq a) => a -> Id a
+    Id      :: (Typeable a, Eq a) => a -> Id a
 
 deriving instance Show a => Show (Id a)

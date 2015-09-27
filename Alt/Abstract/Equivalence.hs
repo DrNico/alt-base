@@ -43,6 +43,7 @@ class Equivalence eq where
     type ObjEq eq a :: *
     type ObjEq eq a = a
 
+    -- ## remove Typeable constraint, have it live in the Object instead
     witness :: (a' ~ ObjEq eq a, b' ~ ObjEq eq b, Typeable a, Typeable b)
             => a' -> b' -> Maybe (eq a b)
 
